@@ -2802,18 +2802,20 @@ function Hyperion:CreateWindow(config)
     -- ADD CATEGORY (sidebar section label like "MAIN", "COMBAT")
     -- ============================================================
     function WindowObj:AddCategory(name)
-        local catOrder = #WindowObj.Tabs + 1
+        -- Use current child count so the LayoutOrder is always unique
+        -- and never collides with a tab that shares the same Tabs index
+        local catOrder = #TabContainer:GetChildren() + 1
 
         local CatLabel = Util.Create("Frame", {
             Name = "Cat_" .. name,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 0, 22),
-            LayoutOrder = catOrder * 100 - 1,
+            LayoutOrder = catOrder,
             ZIndex = 3,
             Parent = TabContainer
         })
 
-        Util.Create("TextLabel", {
+        local CatLabelText = Util.Create("TextLabel", {
             Name = "Label",
             BackgroundTransparency = 1,
             Size = UDim2.new(1, -8, 1, 0),
@@ -2827,6 +2829,7 @@ function Hyperion:CreateWindow(config)
             ZIndex = 4,
             Parent = CatLabel
         })
+        Themed(CatLabelText, { TextColor3 = function(t) return t.TextMuted end })
 
         -- Thin separator line at top (skip for first category)
         if #TabContainer:GetChildren() > 3 then -- list + padding + this
@@ -2851,7 +2854,7 @@ function Hyperion:CreateWindow(config)
         tabCfg = tabCfg or {}
         local tabName  = tabCfg.Name or "Tab"
         local tabIcon  = tabCfg.Icon or nil
-        local tabOrder = #WindowObj.Tabs + 1
+        local tabOrder = #TabContainer:GetChildren() + 1
 
         local TabObj = {}
         TabObj.Sections = {}
