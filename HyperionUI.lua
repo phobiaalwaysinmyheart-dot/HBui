@@ -2802,20 +2802,18 @@ function Hyperion:CreateWindow(config)
     -- ADD CATEGORY (sidebar section label like "MAIN", "COMBAT")
     -- ============================================================
     function WindowObj:AddCategory(name)
-        -- Use current child count so the LayoutOrder is always unique
-        -- and never collides with a tab that shares the same Tabs index
-        local catOrder = #TabContainer:GetChildren() + 1
+        local catOrder = #WindowObj.Tabs + 1
 
         local CatLabel = Util.Create("Frame", {
             Name = "Cat_" .. name,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 0, 22),
-            LayoutOrder = catOrder,
+            LayoutOrder = catOrder * 100 - 1,
             ZIndex = 3,
             Parent = TabContainer
         })
 
-        local CatLabelText = Util.Create("TextLabel", {
+        Util.Create("TextLabel", {
             Name = "Label",
             BackgroundTransparency = 1,
             Size = UDim2.new(1, -8, 1, 0),
@@ -2829,7 +2827,6 @@ function Hyperion:CreateWindow(config)
             ZIndex = 4,
             Parent = CatLabel
         })
-        Themed(CatLabelText, { TextColor3 = function(t) return t.TextMuted end })
 
         -- Thin separator line at top (skip for first category)
         if #TabContainer:GetChildren() > 3 then -- list + padding + this
@@ -2854,7 +2851,7 @@ function Hyperion:CreateWindow(config)
         tabCfg = tabCfg or {}
         local tabName  = tabCfg.Name or "Tab"
         local tabIcon  = tabCfg.Icon or nil
-        local tabOrder = #TabContainer:GetChildren() + 1
+        local tabOrder = #WindowObj.Tabs + 1
 
         local TabObj = {}
         TabObj.Sections = {}
@@ -3363,11 +3360,6 @@ function Hyperion:CreateWindow(config)
 
                 if flag then
                     Hyperion.Flags[flag] = value
-                    Hyperion.FlagCallbacks[flag] = function(v)
-                        value = v
-                        if flag then Hyperion.Flags[flag] = v end
-                        UpdateVisual(v)
-                    end
                 end
 
                 local Frame = Util.Create("Frame", {
@@ -3446,12 +3438,13 @@ function Hyperion:CreateWindow(config)
                     })
                 end
 
-                -- Re-register the callback for config loading
+                -- Register callback for config loading
                 if flag then
                     Hyperion.FlagCallbacks[flag] = function(v)
                         value = v
                         Hyperion.Flags[flag] = v
                         UpdateVisual(v)
+                        task.spawn(callback, v)
                     end
                 end
 
@@ -3656,6 +3649,7 @@ function Hyperion:CreateWindow(config)
                         local r = (value - min) / math.max(max - min, 0.001)
                         Fill.Size = UDim2.new(r, 0, 1, 0)
                         KnobObj.Position = UDim2.new(r, 0, 0.5, 0)
+                        task.spawn(callback, value)
                     end
                 end
 
@@ -3997,6 +3991,7 @@ function Hyperion:CreateWindow(config)
                     Hyperion.FlagCallbacks[flag] = function(v)
                         selected = v; Hyperion.Flags[flag] = v
                         DropText.Text = GetDisplay(); RefreshOptions()
+                        task.spawn(callback, v)
                     end
                 end
 
@@ -4176,6 +4171,14 @@ function Hyperion:CreateWindow(config)
                         end
                     end
                 end)
+
+                if flag then
+                    Hyperion.FlagCallbacks[flag] = function(v)
+                        value = v
+                        Hyperion.Flags[flag] = v
+                        KbBtn.Text = KeyName(v)
+                    end
+                end
 
                 local API = {}
                 function API:Set(v) value = v; if flag then Hyperion.Flags[flag] = v end; KbBtn.Text = KeyName(v) end
