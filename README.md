@@ -1,131 +1,153 @@
-[README_Hyperion_UI_UPDATED.md](https://github.com/user-attachments/files/26493054/README_Hyperion_UI_UPDATED.md)
-# Hyperion UI Library – README (Updated)
+[README_Hyperion_UI_GITHUB.md](https://github.com/user-attachments/files/26494941/README_Hyperion_UI_GITHUB.md)
+# Hyperion UI Library
 
-## New: Categories, Groups, and Dividers
-
-### Categories (Sidebar Headers)
-Use categories to organize tabs in the sidebar.
-
-```lua
-Window:AddCategory("Combat")
-```
-
-They act as **labels**, not clickable tabs.
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+![Version](https://img.shields.io/badge/version-3.0-purple)
+![Lua](https://img.shields.io/badge/language-Luau-blue)
 
 ---
 
-### Tabs
-Tabs are the main pages of your UI.
+## Overview
+Hyperion UI is a modern Roblox UI library focused on:
+- clean design
+- smooth animations
+- easy config system
+- organized layouts
+
+---
+
+## Features
+- 🧩 Tabs & Categories
+- 📂 Built-in Config Manager
+- 🎨 Theme System + Theme Picker
+- 🔘 Toggles, Sliders, Dropdowns, MultiDropdowns
+- 🎯 Keybinds
+- 🌈 Color Pickers
+- 📑 Dividers & Groups
+- 🔔 Notifications
+
+---
+
+## Installation
 
 ```lua
-local Tab = Window:AddTab({
-    Name = "Combat",
-    Icon = Hyperion.Lucide.Target
+local Hyperion = loadstring(game:HttpGet("YOUR_LINK_HERE"))()
+```
+
+---
+
+## Quick Example
+
+```lua
+local Window = Hyperion:CreateWindow({
+    Title = "Hyperion",
+    Keybind = Enum.KeyCode.RightControl
 })
-```
 
----
+Window:AddCategory("Main")
 
-### Sections
-Sections hold your UI elements.
+local Tab = Window:AddTab({
+    Name = "Home",
+    Icon = Hyperion.Lucide.Home
+})
 
-```lua
 local Section = Tab:AddSection({
-    Name = "Aimbot",
+    Name = "Example",
     Side = "Left"
 })
-```
 
----
-
-### Groups (Fake Sub Tabs)
-Groups organize sections inside a tab.
-
-```lua
-local Section = Tab:AddSection({
-    Name  = "ESP Settings",
-    Side  = "Left",
-    Group = "Player ESP"
+Section:AddToggle({
+    Name = "Enabled",
+    Default = true
 })
 ```
 
-Groups are NOT real tabs — they are visual organization tools.
-
 ---
 
-### Dividers
-Dividers split content inside a section.
+## Structure Guide
 
-```lua
-Section:AddDivider({ Title = "Colors" })
-```
-
-#### Example layout:
-
-```lua
-Section:AddToggle({ Name = "Enable ESP" })
-
-Section:AddDivider({ Title = "Colors" })
-
-Section:AddColorPicker({ Name = "Box Color" })
-Section:AddColorPicker({ Name = "Name Color" })
-```
-
-#### What dividers do:
-- Separate settings into readable sections
-- Add a labeled break (like “Colors”, “Info”, “Danger”)
-- Improve UI clarity
-
----
-
-### Best Practices
-
-Use:
-- **Categories** → organize sidebar
-- **Tabs** → main features
-- **Groups** → organize sections inside tabs
-- **Dividers** → split content inside sections
-
----
-
-### Example Structure
-
-```lua
-Window:AddCategory("Visuals")
-
-local Tab = Window:AddTab({
-    Name = "Visuals",
-    Icon = Hyperion.Lucide.Eye
-})
-
-local Section = Tab:AddSection({
-    Name  = "ESP",
-    Side  = "Left",
-    Group = "Player ESP"
-})
-
-Section:AddToggle({ Name = "Enable ESP" })
-
-Section:AddDivider({ Title = "Colors" })
-
-Section:AddColorPicker({ Name = "Box Color" })
-```
-
----
-
-### Summary
-
-| Feature    | Purpose |
-|-----------|--------|
-| Category  | Sidebar label |
-| Tab       | Main page |
-| Section   | Container |
-| Group     | Organizes sections (fake sub tab) |
-| Divider   | Splits section content |
-
----
-
-UI structure:
 ```
 Category → Tab → Section → Divider → Elements
 ```
+
+### Categories
+Organize sidebar tabs.
+
+### Tabs
+Main pages of your UI.
+
+### Sections
+Containers for elements.
+
+### Groups
+Organize sections visually (like sub tabs).
+
+### Dividers
+Split sections into readable parts.
+
+---
+
+## Divider Example
+
+```lua
+Section:AddDivider({ Title = "Colors" })
+
+Section:AddColorPicker({ Name = "Main Color" })
+Section:AddColorPicker({ Name = "Accent Color" })
+```
+
+---
+
+## Theme System
+
+```lua
+Hyperion:SetTheme("Midnight")
+```
+
+Or:
+
+```lua
+Section:AddThemePicker({
+    Callback = function(theme)
+        print(theme)
+    end
+})
+```
+
+---
+
+## Config System
+
+```lua
+Window:SaveConfig("myconfig")
+Window:LoadConfig("myconfig")
+Window:DeleteConfig("myconfig")
+Window:OpenConfigPanel()
+```
+
+---
+
+## Notifications
+
+```lua
+Hyperion:Notify({
+    Title = "Hyperion",
+    Content = "Loaded!",
+    Type = "Success",
+    Duration = 3
+})
+```
+
+---
+
+## Tips
+- Use **groups + dividers** to make UI clean
+- Keep flags unique
+- Use Lucide icons for consistency
+
+---
+
+## Credits
+- Hyperion UI by Phobia
+- Icons by Lucide
+
