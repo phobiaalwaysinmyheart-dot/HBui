@@ -637,11 +637,16 @@ end)
 function Hyperion:CreateWindow(config)
     config = config or {}
     local windowConfig = {
-        Title   = config.Title or "Hyperion",
-        Logo    = config.Logo or "rbxassetid://74070104523360",
-        Size    = config.Size or UDim2.new(0, 760, 0, 540),
-        Keybind = config.Keybind or Enum.KeyCode.RightControl,
-        Theme   = config.Theme or {},
+        Title    = config.Title or "Hyperion",
+        Logo     = config.Logo or "rbxassetid://74070104523360",
+        Size     = config.Size or UDim2.new(0, 760, 0, 540),
+        Keybind  = config.Keybind or Enum.KeyCode.RightControl,
+        Theme    = config.Theme or {},
+        -- Key system
+        Key      = config.Key,        -- string or table of valid keys
+        KeySave  = config.KeySave ~= false, -- save key to file so user only enters once (default true)
+        KeyTitle = config.KeyTitle or "Key Required",
+        KeySub   = config.KeySub   or "Enter your access key to continue.",
     }
 
     -- Apply theme overrides
@@ -905,8 +910,151 @@ function Hyperion:CreateWindow(config)
         Parent = LoadingFill,
     })
 
+    -- ============================================================
+    -- KEY SYSTEM (optional)
+    -- ============================================================
+    -- Validate a key attempt against config.Key (string or table)
+    local function IsValidKey(attempt)
+        local k = windowConfig.Key
+        if type(k) == "string" then
+            return attempt == k
+        elseif type(k) == "table" then
+            for _, v in ipairs(k) do
+                if attempt == v then return true end
+            end
+        end
+        return false
+    end
+
+    -- Check if key was already saved to disk
+    local keyFile = "Hyperion/key.dat"
+    local keyAlreadySaved = false
+    if windowConfig.Key and windowConfig.KeySave then
+        local ok, saved = pcall(readfile, keyFile)
+        if ok and saved ~= "" and IsValidKey(saved) then
+            keyAlreadySaved = true
+        end
+    end
+
+    -- Key UI elements (only built when needed)
+    local KeyInput, KeyVerifyBtn, KeyStatusLbl, KeyBox
+    local keyVerified = (not windowConfig.Key) or keyAlreadySaved
+    local keyResolved = false  -- signals the loader to continue
+
+    if windowConfig.Key and not keyAlreadySaved then
+        -- Resize panel to fit key input
+        LoadingPanel.Size = UDim2.new(0, 340, 0, 200)
+
+        KeyBox = Util.Create("Frame", {
+            BackgroundColor3 = Theme.InputBg,
+            Position = UDim2.new(0, 18, 1, -80),
+            Size = UDim2.new(1, -36, 0, 34),
+            BackgroundTransparency = 0,
+            BorderSizePixel = 0,
+            ZIndex = 205,
+            Visible = false,
+            Parent = LoadingPanel,
+        })
+        Util.AddCorner(KeyBox, Theme.CornerSmall)
+        Util.AddStroke(KeyBox, Theme.Border, 1, 0.3)
+
+        KeyInput = Util.Create("TextBox", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, -44, 1, 0),
+            Position = UDim2.new(0, 10, 0, 0),
+            Text = "",
+            PlaceholderText = "Enter key...",
+            TextColor3 = Theme.Text,
+            PlaceholderColor3 = Theme.TextMuted,
+            FontFace = Theme.Font,
+            TextSize = 12,
+            ClearTextOnFocus = false,
+            ZIndex = 206,
+            Parent = KeyBox,
+        })
+
+        KeyVerifyBtn = Util.Create("TextButton", {
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 34, 0, 34),
+            Position = UDim2.new(1, 0, 0.5, 0),
+            AnchorPoint = Vector2.new(1, 0.5),
+            Text = "→",
+            TextColor3 = Color3.new(1,1,1),
+            FontFace = Theme.FontBold,
+            TextSize = 14,
+            AutoButtonColor = false,
+            ZIndex = 206,
+            Parent = KeyBox,
+        })
+        Util.AddCorner(KeyVerifyBtn, Theme.CornerSmall)
+
+        KeyStatusLbl = Util.Create("TextLabel", {
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 18, 1, -40),
+            Size = UDim2.new(1, -36, 0, 14),
+            Text = "",
+            TextColor3 = Theme.Error,
+            FontFace = Theme.Font,
+            TextSize = 11,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextTransparency = 1,
+            ZIndex = 205,
+            Parent = LoadingPanel,
+        })
+
+        -- Shake animation on wrong key
+        local function ShakePanel()
+            local orig = LoadingPanel.Position
+            for i = 1, 4 do
+                local dir = (i % 2 == 0) and 8 or -8
+                Util.Tween(LoadingPanel, 0.04, {Position = UDim2.new(orig.X.Scale, orig.X.Offset + dir, orig.Y.Scale, orig.Y.Offset)}, Enum.EasingStyle.Linear)
+                task.wait(0.05)
+            end
+            Util.Tween(LoadingPanel, 0.08, {Position = orig}, Enum.EasingStyle.Linear)
+        end
+
+        local function TryKey()
+            local attempt = KeyInput.Text
+            if IsValidKey(attempt) then
+                -- Save to disk if KeySave enabled
+                if windowConfig.KeySave then
+                    pcall(makefolder, "Hyperion")
+                    pcall(writefile, keyFile, attempt)
+                end
+                keyVerified = true
+                keyResolved = true
+                -- Green flash
+                KeyStatusLbl.Text = "✓ Access granted"
+                KeyStatusLbl.TextColor3 = Theme.Success
+                Util.Tween(KeyStatusLbl, 0.2, {TextTransparency = 0}, Enum.EasingStyle.Quint)
+                Util.Tween(KeyBox, 0.2, {BackgroundColor3 = Color3.fromRGB(30, 60, 35)})
+            else
+                -- Red flash + shake
+                task.spawn(ShakePanel)
+                KeyStatusLbl.Text = "✗ Invalid key"
+                KeyStatusLbl.TextColor3 = Theme.Error
+                Util.Tween(KeyStatusLbl, 0.15, {TextTransparency = 0}, Enum.EasingStyle.Quint)
+                task.delay(1.8, function()
+                    Util.Tween(KeyStatusLbl, 0.3, {TextTransparency = 1}, Enum.EasingStyle.Quint)
+                end)
+                Util.Tween(KeyBox, 0.15, {BackgroundColor3 = Color3.fromRGB(50, 20, 22)})
+                task.delay(0.6, function()
+                    Util.Tween(KeyBox, 0.3, {BackgroundColor3 = Theme.InputBg})
+                end)
+            end
+        end
+
+        KeyVerifyBtn.MouseButton1Click:Connect(TryKey)
+        KeyInput.FocusLost:Connect(function(enterPressed)
+            if enterPressed then TryKey() end
+        end)
+    end
+
+    -- ============================================================
+    -- LOADING ANIMATION
+    -- ============================================================
     task.spawn(function()
-        -- Phase 1: card rises from slightly below and fades in (0.5s)
+        -- Phase 1: card rises and fades in
         Util.Tween(LoadingPanel, 0.5, {
             BackgroundTransparency = 0,
             Position = UDim2.new(0.5, 0, 0.5, 0),
@@ -921,10 +1069,37 @@ function Hyperion:CreateWindow(config)
         task.wait(0.08)
         Util.Tween(LoadingTitle, 0.4, {TextTransparency = 0}, Enum.EasingStyle.Quint)
         task.wait(0.08)
-        Util.Tween(LoadingSub, 0.35, {TextTransparency = 0.15}, Enum.EasingStyle.Quint)
+
+        if windowConfig.Key and not keyAlreadySaved then
+            -- Show key prompt instead of "Loading interface..."
+            LoadingSub.Text = windowConfig.KeyTitle
+            LoadingSub.TextColor3 = Theme.TextDim
+            Util.Tween(LoadingSub, 0.35, {TextTransparency = 0}, Enum.EasingStyle.Quint)
+            task.wait(0.25)
+            -- Reveal key input box
+            if KeyBox then
+                KeyBox.Visible = true
+                KeyBox.BackgroundTransparency = 1
+                Util.Tween(KeyBox, 0.3, {BackgroundTransparency = 0}, Enum.EasingStyle.Quint)
+            end
+            -- Wait for the player to enter a valid key
+            while not keyResolved do
+                task.wait(0.05)
+            end
+            task.wait(0.4)  -- brief pause after success
+            -- Hide key UI
+            if KeyBox then Util.Tween(KeyBox, 0.2, {BackgroundTransparency = 1}) end
+            if KeyStatusLbl then Util.Tween(KeyStatusLbl, 0.2, {TextTransparency = 1}) end
+            task.wait(0.15)
+            -- Switch sub label to loading
+            LoadingSub.Text = "Loading interface..."
+            LoadingSub.TextColor3 = Theme.TextMuted
+        else
+            Util.Tween(LoadingSub, 0.35, {TextTransparency = 0.15}, Enum.EasingStyle.Quint)
+        end
         task.wait(0.3)
 
-        -- Phase 2: accent bar sweeps across, then progress fills
+        -- Phase 2: accent bar + progress
         Util.Tween(AccentBar, 0.75, {Size = UDim2.new(0.92, 0, 0, 1)}, Enum.EasingStyle.Quint)
         task.wait(0.2)
         Util.Tween(LoadingTrack, 0.3, {BackgroundTransparency = 0}, Enum.EasingStyle.Quint)
@@ -933,7 +1108,7 @@ function Hyperion:CreateWindow(config)
         Util.Tween(LoadingFill, 1.8, {Size = UDim2.new(1, 0, 1, 0)}, Enum.EasingStyle.Quint)
         task.wait(2.0)
 
-        -- Phase 3: smooth exit — card floats up and fades, overlay fades out
+        -- Phase 3: smooth exit
         LoadingPulseActive = false
         Util.Tween(LoadingPanel, 0.5, {
             BackgroundTransparency = 1,
