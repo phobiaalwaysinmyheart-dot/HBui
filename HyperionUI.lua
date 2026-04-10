@@ -372,7 +372,8 @@ local function _startStarfield(parent, starColor)
     local function spawnAmbient()
         if not active or not parent or not parent.Parent then return end
 
-        local coreSize = math.random(1, 2)   -- tiny: 1–2px
+        local hasGlow  = math.random(1, 5) ~= 1  -- 80% have glow rings, 20% bare dot
+        local coreSize = math.random(1, 2)
         local px = math.random(3, 96) / 100
         local py = math.random(3, 96) / 100
         local fadeIn  = math.random(10, 22) / 10
@@ -380,25 +381,26 @@ local function _startStarfield(parent, starColor)
         local fadeOut = math.random(12, 28) / 10
         local pause   = math.random(5,  30) / 10
 
-        -- 2 concentric rings (smaller than before)
-        local rings = {
-            { mult = 6,   tr = 0.86 },
-            { mult = 2.8, tr = 0.68 },
-        }
         local ringFrames = {}
-        for _, def in ipairs(rings) do
-            local rSize = math.max(1, coreSize * def.mult)
-            local r = Instance.new("Frame")
-            r.BackgroundColor3 = color
-            r.BackgroundTransparency = 1
-            r.BorderSizePixel = 0
-            r.Size = UDim2.new(0, rSize, 0, rSize)
-            r.Position = UDim2.new(px, -rSize/2, py, -rSize/2)
-            r.ZIndex = 1
-            r.Parent = parent
-            local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1,0); rc.Parent = r
-            table.insert(ringFrames, { frame = r, peakTr = def.tr, size = rSize })
-            table.insert(Hyperion._starFrames, r)
+        if hasGlow then
+            local rings = {
+                { mult = 6,   tr = 0.86 },
+                { mult = 2.8, tr = 0.68 },
+            }
+            for _, def in ipairs(rings) do
+                local rSize = math.max(1, coreSize * def.mult)
+                local r = Instance.new("Frame")
+                r.BackgroundColor3 = color
+                r.BackgroundTransparency = 1
+                r.BorderSizePixel = 0
+                r.Size = UDim2.new(0, rSize, 0, rSize)
+                r.Position = UDim2.new(px, -rSize/2, py, -rSize/2)
+                r.ZIndex = 1
+                r.Parent = parent
+                local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1,0); rc.Parent = r
+                table.insert(ringFrames, { frame = r, peakTr = def.tr, size = rSize })
+                table.insert(Hyperion._starFrames, r)
+            end
         end
 
         local core = Instance.new("Frame")
@@ -459,94 +461,109 @@ local function _startStarfield(parent, starColor)
     local function spawnRainingStar()
         if not active or not parent or not parent.Parent then return end
 
-        local headSize  = math.random(2, 3)
-        local tailLen   = math.random(45, 90)
-        local startX    = math.random(5, 95) / 100
-        local startY    = math.random(-5, 20) / 100
-        local speed     = math.random(22, 42) / 10
-        -- angle: mostly straight down with slight rightward drift
-        local angleDeg  = math.random(200, 250)   -- 200-250° = downward + slight right
-        local angleRad  = math.rad(angleDeg)
-        local travelX   = math.cos(angleRad) * 0.22
-        local travelY   = math.sin(angleRad) * -0.65  -- negative because Y increases downward in UDim2
-        -- tail rotation to match direction
-        local tailRot   = angleDeg - 180
+        local hasGlow = math.random(1, 5) ~= 1  -- 80% have glow, 20% don't
 
-        -- Tail: thin, longer, with gradient fade tip→head
+        -- Use pixel travel so direction is exact
+        -- Stars fall from top, drift slightly right
+        local startX = math.random(0, 90) / 100
+        local driftX = math.random(30, 80)   -- pixels right
+        local driftY = math.random(200, 380) -- pixels down
+        local tailLen = math.random(40, 75)
+        local headSz  = math.random(2, 3)
+        local speed   = math.random(20, 38) / 10
+
+        -- Rotation: atan2(driftY, driftX) gives the angle of travel
+        local rot = math.deg(math.atan2(driftX, driftY))  -- degrees clockwise from down
+
+        -- Container moves, children stay at origin
+        local container = Instance.new("Frame")
+        container.BackgroundTransparency = 1
+        container.BorderSizePixel = 0
+        container.Size = UDim2.new(0, 1, 0, 1)
+        container.Position = UDim2.new(startX, 0, -0.02, 0)
+        container.ZIndex = 2
+        container.Parent = parent
+        table.insert(Hyperion._starFrames, container)
+
+        -- Tail: anchored at bottom (head end), extends upward (away from direction of travel)
         local tail = Instance.new("Frame")
         tail.BackgroundColor3 = color
         tail.BackgroundTransparency = 0
         tail.BorderSizePixel = 0
         tail.Size = UDim2.new(0, 1, 0, tailLen)
-        tail.Position = UDim2.new(startX, 0, startY, 0)
-        tail.AnchorPoint = Vector2.new(0.5, 1)
-        tail.Rotation = tailRot
+        tail.AnchorPoint = Vector2.new(0.5, 1)  -- bottom of tail = head position
+        tail.Position = UDim2.new(0, 0, 0, 0)   -- at container origin
+        tail.Rotation = rot                       -- rotated to match travel direction
         tail.ZIndex = 2
-        tail.Parent = parent
-        -- Gradient: tip=fully transparent → head=visible
+        tail.Parent = container
+        -- Gradient: top of tail (tip) = transparent, bottom (head) = solid
         local tg = Instance.new("UIGradient")
-        tg.Rotation = 0
         tg.Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0,   1),
-            NumberSequenceKeypoint.new(0.6, 0.5),
-            NumberSequenceKeypoint.new(1,   0.05),
+            NumberSequenceKeypoint.new(0.5, 0.6),
+            NumberSequenceKeypoint.new(1,   0.1),
         })
         tg.Parent = tail
-        table.insert(Hyperion._starFrames, tail)
 
-        -- Outer glow ring on head (largest, most transparent)
-        local og = headSize * 7
-        local outerGlow = Instance.new("Frame")
-        outerGlow.BackgroundColor3 = color
-        outerGlow.BackgroundTransparency = 0.75
-        outerGlow.BorderSizePixel = 0
-        outerGlow.Size = UDim2.new(0, og, 0, og)
-        outerGlow.Position = UDim2.new(startX, -og/2, startY, -og/2)
-        outerGlow.ZIndex = 2
-        outerGlow.Parent = parent
-        Instance.new("UICorner", outerGlow).CornerRadius = UDim.new(1,0)
-        table.insert(Hyperion._starFrames, outerGlow)
+        -- Outer glow (only if hasGlow)
+        local outerGlow, innerGlow
+        if hasGlow then
+            local og = headSz * 6
+            outerGlow = Instance.new("Frame")
+            outerGlow.BackgroundColor3 = color
+            outerGlow.BackgroundTransparency = 0.72
+            outerGlow.BorderSizePixel = 0
+            outerGlow.Size = UDim2.new(0, og, 0, og)
+            outerGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+            outerGlow.Position = UDim2.new(0, 0, 0, 0)
+            outerGlow.ZIndex = 2
+            outerGlow.Parent = container
+            Instance.new("UICorner", outerGlow).CornerRadius = UDim.new(1, 0)
 
-        -- Inner glow ring
-        local ig = headSize * 3.5
-        local innerGlow = Instance.new("Frame")
-        innerGlow.BackgroundColor3 = color
-        innerGlow.BackgroundTransparency = 0.45
-        innerGlow.BorderSizePixel = 0
-        innerGlow.Size = UDim2.new(0, ig, 0, ig)
-        innerGlow.Position = UDim2.new(startX, -ig/2, startY, -ig/2)
-        innerGlow.ZIndex = 3
-        innerGlow.Parent = parent
-        Instance.new("UICorner", innerGlow).CornerRadius = UDim.new(1,0)
-        table.insert(Hyperion._starFrames, innerGlow)
+            local ig2 = headSz * 3
+            innerGlow = Instance.new("Frame")
+            innerGlow.BackgroundColor3 = color
+            innerGlow.BackgroundTransparency = 0.45
+            innerGlow.BorderSizePixel = 0
+            innerGlow.Size = UDim2.new(0, ig2, 0, ig2)
+            innerGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+            innerGlow.Position = UDim2.new(0, 0, 0, 0)
+            innerGlow.ZIndex = 3
+            innerGlow.Parent = container
+            Instance.new("UICorner", innerGlow).CornerRadius = UDim.new(1, 0)
+        end
 
-        -- Bright white core head
+        -- White core dot
         local head = Instance.new("Frame")
         head.BackgroundColor3 = Color3.new(1, 1, 1)
         head.BackgroundTransparency = 0
         head.BorderSizePixel = 0
-        head.Size = UDim2.new(0, headSize, 0, headSize)
-        head.Position = UDim2.new(startX, -headSize/2, startY, -headSize/2)
+        head.Size = UDim2.new(0, headSz, 0, headSz)
+        head.AnchorPoint = Vector2.new(0.5, 0.5)
+        head.Position = UDim2.new(0, 0, 0, 0)
         head.ZIndex = 5
-        head.Parent = parent
-        Instance.new("UICorner", head).CornerRadius = UDim.new(1,0)
-        table.insert(Hyperion._starFrames, head)
+        head.Parent = container
+        Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
 
-        local endX = startX + travelX
-        local endY = startY + travelY
-        local ti   = TweenInfo.new(speed, Enum.EasingStyle.Linear)
+        -- Tween just the container
+        local ts2 = game:GetService("TweenService")
+        local ti  = TweenInfo.new(speed, Enum.EasingStyle.Linear)
+        ts2:Create(container, ti, {
+            Position = UDim2.new(startX, driftX, -0.02, driftY),
+            BackgroundTransparency = 1,  -- unused but harmless
+        }):Play()
+        -- Fade head + glows near end
+        task.delay(speed * 0.65, function()
+            if not active or not container.Parent then return end
+            local fadeDur = speed * 0.35
+            local fti = TweenInfo.new(fadeDur, Enum.EasingStyle.Sine)
+            ts2:Create(head, fti, {BackgroundTransparency = 1}):Play()
+            if outerGlow then ts2:Create(outerGlow, fti, {BackgroundTransparency = 1}):Play() end
+            if innerGlow then ts2:Create(innerGlow, fti, {BackgroundTransparency = 1}):Play() end
+        end)
 
-        -- Move everything, fade out toward the end
-        game:GetService("TweenService"):Create(tail,       ti, {Position = UDim2.new(endX, 0,          endY, 0),          BackgroundTransparency = 1}):Play()
-        game:GetService("TweenService"):Create(head,       ti, {Position = UDim2.new(endX, -headSize/2, endY, -headSize/2), BackgroundTransparency = 1}):Play()
-        game:GetService("TweenService"):Create(innerGlow,  ti, {Position = UDim2.new(endX, -ig/2,      endY, -ig/2),      BackgroundTransparency = 1}):Play()
-        game:GetService("TweenService"):Create(outerGlow,  ti, {Position = UDim2.new(endX, -og/2,      endY, -og/2),      BackgroundTransparency = 1}):Play()
-
-        task.delay(speed + 0.2, function()
-            if tail       and tail.Parent       then tail:Destroy()       end
-            if head       and head.Parent       then head:Destroy()       end
-            if innerGlow  and innerGlow.Parent  then innerGlow:Destroy()  end
-            if outerGlow  and outerGlow.Parent  then outerGlow:Destroy()  end
+        task.delay(speed + 0.1, function()
+            if container and container.Parent then container:Destroy() end
         end)
     end
 
@@ -1489,7 +1506,18 @@ function Hyperion:CreateWindow(config)
     Themed(_mfStroke, { Color = function(t) return t.Border end })
 
     -- Register this window's background as the star canvas
-    Hyperion._starParent = MainFrame
+    -- Use a clipping frame so stars don't bleed outside the window rounded corners
+    local StarCanvas = Util.Create("Frame", {
+        Name = "StarCanvas",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 1,
+        ClipsDescendants = true,
+        Parent = MainFrame,
+    })
+    Util.AddCorner(StarCanvas, Theme.CornerLarge)
+    Hyperion._starParent = StarCanvas
 
     -- Gradient applied directly to MainFrame via UIGradient
     -- (a child Frame at ZIndex 0 doesn't actually go behind the bg color)
