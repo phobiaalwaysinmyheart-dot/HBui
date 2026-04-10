@@ -2569,12 +2569,12 @@ function Hyperion:CreateWindow(config)
         Size     = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0, 4, 0, 4),
         BorderSizePixel = 0,
-        ScrollBarThickness = 4,
+        ScrollBarThickness = 0,
         ScrollBarImageColor3 = Theme.Accent,
         ScrollBarImageTransparency = 0.3,
-        TopImage = "rbxassetid://17569018752",
-        MidImage = "rbxassetid://17569018752",
-        BottomImage = "rbxassetid://17569018752",
+        
+        
+        
         ScrollingDirection = Enum.ScrollingDirection.Y,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(0,0,0,0),
@@ -3740,12 +3740,12 @@ function Hyperion:CreateWindow(config)
             Name = "Page_" .. tabName,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 1, 0),
-            ScrollBarThickness = 4,
+            ScrollBarThickness = 0,
             ScrollBarImageColor3 = Theme.Accent,
             ScrollBarImageTransparency = 0.3,
-            TopImage = "rbxassetid://17569018752",
-            MidImage = "rbxassetid://17569018752",
-            BottomImage = "rbxassetid://17569018752",
+            
+            
+            
             ScrollingDirection = Enum.ScrollingDirection.Y,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -4673,12 +4673,12 @@ function Hyperion:CreateWindow(config)
                     Position = UDim2.new(0, 0, 0, 54),
                     ClipsDescendants = true,
                     Visible = false,
-                    ScrollBarThickness = 4,
+                    ScrollBarThickness = 0,
                     ScrollBarImageColor3 = Theme.Accent,
                     ScrollBarImageTransparency = 0.3,
-                    TopImage = "rbxassetid://17569018752",
-                    MidImage = "rbxassetid://17569018752",
-                    BottomImage = "rbxassetid://17569018752",
+                    
+                    
+                    
                     ScrollingDirection = Enum.ScrollingDirection.Y,
                     AutomaticCanvasSize = Enum.AutomaticSize.Y,
                     ZIndex = 20,
