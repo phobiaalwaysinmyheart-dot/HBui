@@ -363,49 +363,46 @@ end
 
 local function _startStarfield(parent, starColor)
     _stopStarfield()
-    local MAX_STARS = 40
     local ts = game:GetService("TweenService")
     local active = true
     local color = starColor or Color3.fromRGB(200, 220, 255)
 
-    local function spawnStar()
+    -- ── Twinkling ambient stars ──────────────────────────────────
+    local AMBIENT = 35
+    local function spawnAmbient()
         if not active or not parent or not parent.Parent then return end
 
-        local coreSize = math.random(2, 4)
+        local coreSize = math.random(1, 2)   -- tiny: 1–2px
         local px = math.random(3, 96) / 100
         local py = math.random(3, 96) / 100
-        local fadeIn  = math.random(12, 25) / 10
-        local hold    = math.random(18, 50) / 10
-        local fadeOut = math.random(15, 35) / 10
-        local pause   = math.random(8,  35) / 10
+        local fadeIn  = math.random(10, 22) / 10
+        local hold    = math.random(15, 45) / 10
+        local fadeOut = math.random(12, 28) / 10
+        local pause   = math.random(5,  30) / 10
 
-        -- Build 3 concentric glow rings: outer (most transparent) → mid → core
-        -- This fakes a real soft radial glow falloff since Roblox has no blur
-        local rings = {}
-        local ringDefs = {
-            { mult = 9,  tr = 0.88 },  -- outermost ring, barely visible
-            { mult = 5,  tr = 0.76 },  -- mid ring
-            { mult = 2.5,tr = 0.60 },  -- inner halo
+        -- 2 concentric rings (smaller than before)
+        local rings = {
+            { mult = 6,   tr = 0.86 },
+            { mult = 2.8, tr = 0.68 },
         }
-
-        for _, def in ipairs(ringDefs) do
-            local rSize = coreSize * def.mult
-            local ring = Instance.new("Frame")
-            ring.BackgroundColor3 = color
-            ring.BackgroundTransparency = 1
-            ring.BorderSizePixel = 0
-            ring.Size = UDim2.new(0, rSize, 0, rSize)
-            ring.Position = UDim2.new(px, -rSize/2, py, -rSize/2)
-            ring.ZIndex = 1
-            ring.Parent = parent
-            local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1,0); rc.Parent = ring
-            table.insert(rings, { frame = ring, peakTr = def.tr })
-            table.insert(Hyperion._starFrames, ring)
+        local ringFrames = {}
+        for _, def in ipairs(rings) do
+            local rSize = math.max(1, coreSize * def.mult)
+            local r = Instance.new("Frame")
+            r.BackgroundColor3 = color
+            r.BackgroundTransparency = 1
+            r.BorderSizePixel = 0
+            r.Size = UDim2.new(0, rSize, 0, rSize)
+            r.Position = UDim2.new(px, -rSize/2, py, -rSize/2)
+            r.ZIndex = 1
+            r.Parent = parent
+            local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1,0); rc.Parent = r
+            table.insert(ringFrames, { frame = r, peakTr = def.tr, size = rSize })
+            table.insert(Hyperion._starFrames, r)
         end
 
-        -- Core bright dot
         local core = Instance.new("Frame")
-        core.BackgroundColor3 = Color3.new(1, 1, 1)  -- pure white core
+        core.BackgroundColor3 = Color3.new(1,1,1)
         core.BackgroundTransparency = 1
         core.BorderSizePixel = 0
         core.Size = UDim2.new(0, coreSize, 0, coreSize)
@@ -416,71 +413,177 @@ local function _startStarfield(parent, starColor)
         table.insert(Hyperion._starFrames, core)
 
         local function cleanup()
-            for _, r in ipairs(rings) do
-                if r.frame and r.frame.Parent then r.frame:Destroy() end
+            for _, rf in ipairs(ringFrames) do
+                if rf.frame and rf.frame.Parent then rf.frame:Destroy() end
             end
             if core and core.Parent then core:Destroy() end
-            for i = #Hyperion._starFrames, 1, -1 do
-                local f = Hyperion._starFrames[i]
-                if f == core then table.remove(Hyperion._starFrames, i) end
-                for _, r in ipairs(rings) do
-                    if f == r.frame then table.remove(Hyperion._starFrames, i); break end
-                end
-            end
         end
 
         local function cycle()
             if not active or not parent or not parent.Parent then cleanup(); return end
-
-            -- Fade all rings + core IN
-            for _, r in ipairs(rings) do
-                ts:Create(r.frame, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = r.peakTr}):Play()
+            for _, rf in ipairs(ringFrames) do
+                ts:Create(rf.frame, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = rf.peakTr}):Play()
             end
-            ts:Create(core, TweenInfo.new(fadeIn * 0.7, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.0}):Play()
+            ts:Create(core, TweenInfo.new(fadeIn * 0.7, Enum.EasingStyle.Sine), {BackgroundTransparency = 0}):Play()
 
             task.delay(fadeIn + hold, function()
                 if not active then cleanup(); return end
-                -- Fade OUT
-                for _, r in ipairs(rings) do
-                    ts:Create(r.frame, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
+                for _, rf in ipairs(ringFrames) do
+                    ts:Create(rf.frame, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
                 end
                 ts:Create(core, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
 
                 task.delay(fadeOut + pause, function()
                     if not active then cleanup(); return end
-                    -- Move to new spot silently and repeat
                     local nx = math.random(3, 96) / 100
                     local ny = math.random(3, 96) / 100
                     core.Position = UDim2.new(nx, -coreSize/2, ny, -coreSize/2)
-                    for _, r in ipairs(rings) do
-                        local rSize = r.frame.Size.X.Offset
-                        r.frame.Position = UDim2.new(nx, -rSize/2, ny, -rSize/2)
+                    for _, rf in ipairs(ringFrames) do
+                        rf.frame.Position = UDim2.new(nx, -rf.size/2, ny, -rf.size/2)
                     end
                     cycle()
                 end)
             end)
         end
 
-        task.delay(math.random(0, 70) / 10, cycle)
+        task.delay(math.random(0, 60) / 10, cycle)
     end
 
-    for i = 1, MAX_STARS do
-        task.delay(i * 0.06, function()
-            if active and parent and parent.Parent then
-                spawnStar()
-            end
+    for i = 1, AMBIENT do
+        task.delay(i * 0.08, function()
+            if active and parent and parent.Parent then spawnAmbient() end
         end)
     end
 
+    -- ── Raining / shooting stars ─────────────────────────────────
+    -- These are thin elongated streaks that fall diagonally with a glowing head
+    local function spawnRainingStar()
+        if not active or not parent or not parent.Parent then return end
+
+        local parentSize = parent.AbsoluteSize
+        if parentSize.X == 0 then parentSize = Vector2.new(760, 540) end
+
+        local headSize = math.random(2, 3)
+        local tailLen  = math.random(30, 70)
+        local startX   = math.random(0, 100) / 100
+        local startY   = math.random(-10, 30) / 100   -- start above or near top
+        local angle    = math.rad(math.random(55, 75)) -- mostly downward, slight diagonal
+        local speed    = math.random(18, 32) / 10      -- travel time in seconds
+        local dx = math.cos(angle) * 0.18
+        local dy = math.sin(angle) * 0.55
+
+        -- Tail (thin rectangle, rotated)
+        local tail = Instance.new("Frame")
+        tail.BackgroundColor3 = color
+        tail.BackgroundTransparency = 0.4
+        tail.BorderSizePixel = 0
+        tail.Size = UDim2.new(0, 1, 0, tailLen)
+        tail.Position = UDim2.new(startX, 0, startY, 0)
+        tail.AnchorPoint = Vector2.new(0.5, 1)
+        tail.Rotation = math.deg(angle) - 90
+        tail.ZIndex = 2
+        tail.Parent = parent
+        -- Gradient fade on tail
+        local tailGrad = Instance.new("UIGradient")
+        tailGrad.Rotation = 0
+        tailGrad.Color = ColorSequence.new(Color3.new(1,1,1), Color3.new(1,1,1))
+        tailGrad.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 1),    -- tip: transparent
+            NumberSequenceKeypoint.new(1, 0.2),  -- head end: opaque
+        })
+        tailGrad.Parent = tail
+        table.insert(Hyperion._starFrames, tail)
+
+        -- Glowing head
+        local head = Instance.new("Frame")
+        head.BackgroundColor3 = Color3.new(1,1,1)
+        head.BackgroundTransparency = 0.05
+        head.BorderSizePixel = 0
+        head.Size = UDim2.new(0, headSize, 0, headSize)
+        head.Position = UDim2.new(startX, -headSize/2, startY, -headSize/2)
+        head.ZIndex = 4
+        head.Parent = parent
+        local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(1,0); hc.Parent = head
+        table.insert(Hyperion._starFrames, head)
+
+        -- Head glow ring
+        local hgSize = headSize * 4
+        local hg = Instance.new("Frame")
+        hg.BackgroundColor3 = color
+        hg.BackgroundTransparency = 0.55
+        hg.BorderSizePixel = 0
+        hg.Size = UDim2.new(0, hgSize, 0, hgSize)
+        hg.Position = UDim2.new(startX, -hgSize/2, startY, -hgSize/2)
+        hg.ZIndex = 3
+        hg.Parent = parent
+        local hgc = Instance.new("UICorner"); hgc.CornerRadius = UDim.new(1,0); hgc.Parent = hg
+        table.insert(Hyperion._starFrames, hg)
+
+        -- Tween all three downward
+        local endX = startX + dx
+        local endY = startY + dy
+        local ti = TweenInfo.new(speed, Enum.EasingStyle.Linear)
+
+        ts:Create(tail, ti, {Position = UDim2.new(endX, 0, endY, 0), BackgroundTransparency = 1}):Play()
+        ts:Create(head, ti, {Position = UDim2.new(endX, -headSize/2, endY, -headSize/2), BackgroundTransparency = 1}):Play()
+        ts:Create(hg,   ti, {Position = UDim2.new(endX, -hgSize/2,  endY, -hgSize/2),  BackgroundTransparency = 1}):Play()
+
+        task.delay(speed + 0.1, function()
+            if tail and tail.Parent then tail:Destroy() end
+            if head and head.Parent then head:Destroy() end
+            if hg   and hg.Parent   then hg:Destroy()   end
+        end)
+    end
+
+    -- Spawn raining stars on a loop
+    local rainTimer = 0
+    local rainInterval = math.random(8, 18) / 10  -- first one after 0.8–1.8s
+    Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
+        if not active then return end
+        rainTimer = rainTimer + dt
+        if rainTimer >= rainInterval then
+            rainTimer = 0
+            rainInterval = math.random(12, 28) / 10  -- next one 1.2–2.8s later
+            if parent and parent.Parent then
+                spawnRainingStar()
+                -- occasionally spawn a second one slightly offset
+                if math.random(1, 3) == 1 then
+                    task.delay(math.random(2, 6) / 10, function()
+                        if active then spawnRainingStar() end
+                    end)
+                end
+            end
+        end
+    end)
+
     Hyperion._starActive = function() active = false end
-    Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function() end)
 end
 
 -- Hook into SetTheme to start/stop animation
 local _originalSetTheme = Hyperion.SetTheme
 function Hyperion:SetTheme(nameOrTable)
     _originalSetTheme(self, nameOrTable)
+    Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
     local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
+    -- Apply / clear gradient
+    if Hyperion._gradientBg and Hyperion._bgGradient then
+        if preset and preset.Animated then
+            local bg  = preset.Background
+            local mid = preset.AccentSub
+            Hyperion._bgGradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,    bg),
+                ColorSequenceKeypoint.new(0.45, Color3.new(
+                    bg.R * 0.5 + mid.R * 0.5,
+                    bg.G * 0.5 + mid.G * 0.5,
+                    bg.B * 0.5 + mid.B * 0.5
+                )),
+                ColorSequenceKeypoint.new(1,    bg),
+            })
+            Hyperion._gradientBg.BackgroundTransparency = 0
+        else
+            Hyperion._gradientBg.BackgroundTransparency = 1
+        end
+    end
     if preset and preset.Animated and Hyperion._starParent then
         _startStarfield(Hyperion._starParent, preset.StarColor)
     else
@@ -1371,6 +1474,56 @@ function Hyperion:CreateWindow(config)
 
     -- Register this window's background as the star canvas
     Hyperion._starParent = MainFrame
+
+    -- Gradient background for animated themes (sits just above the flat bg color)
+    local GradientBg = Util.Create("Frame", {
+        Name             = "GradientBg",
+        BackgroundColor3 = Theme.Background,
+        BackgroundTransparency = 1,  -- hidden by default
+        Size             = UDim2.new(1, 0, 1, 0),
+        BorderSizePixel  = 0,
+        ZIndex           = 0,
+        ClipsDescendants = true,
+        Parent           = MainFrame,
+    })
+    Util.AddCorner(GradientBg, Theme.CornerLarge)
+    local _bgGradient = Instance.new("UIGradient")
+    _bgGradient.Rotation = 135
+    _bgGradient.Parent = GradientBg
+
+    Hyperion._gradientBg = GradientBg
+    Hyperion._bgGradient = _bgGradient
+
+    -- Apply gradient when theme changes
+    local function _applyGradientForTheme(nameOrTable)
+        local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
+        if not preset or not preset.Animated then
+            GradientBg.BackgroundTransparency = 1
+            return
+        end
+        -- Build gradient from Background → a slightly lighter accent-tinted mid → Background
+        local bg  = preset.Background
+        local mid = preset.AccentSub
+        _bgGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0,    bg),
+            ColorSequenceKeypoint.new(0.45, Color3.new(
+                bg.R * 0.55 + mid.R * 0.45,
+                bg.G * 0.55 + mid.G * 0.45,
+                bg.B * 0.55 + mid.B * 0.45
+            )),
+            ColorSequenceKeypoint.new(1,    bg),
+        })
+        _bgGradient.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0,    0),
+            NumberSequenceKeypoint.new(0.5,  0),
+            NumberSequenceKeypoint.new(1,    0),
+        })
+        GradientBg.BackgroundTransparency = 0
+    end
+
+    Hyperion:OnThemeChanged(function()
+        _applyGradientForTheme(Hyperion._currentThemeName or "Purple")
+    end)
 
     -- Background image layer (sits behind all content, optional)
     local BgImage = Util.Create("ImageLabel", {
