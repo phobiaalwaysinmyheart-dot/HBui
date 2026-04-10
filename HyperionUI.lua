@@ -55,32 +55,32 @@ Hyperion.Unloaded     = false
 -- THEME
 ----------------------------------------------------------------
 Hyperion.Theme = {
-    -- Accent
-    Accent          = Color3.fromRGB(140, 80, 220),
-    AccentDark      = Color3.fromRGB(100, 50, 180),
-    AccentLight     = Color3.fromRGB(170, 110, 255),
-    AccentGlow      = Color3.fromRGB(160, 90, 240),
-    AccentSub       = Color3.fromRGB(90, 45, 160),
+    -- Accent (Nebula defaults)
+    Accent          = Color3.fromRGB(210, 80, 255),
+    AccentDark      = Color3.fromRGB(160, 50, 205),
+    AccentLight     = Color3.fromRGB(230, 115, 255),
+    AccentGlow      = Color3.fromRGB(220, 95, 255),
+    AccentSub       = Color3.fromRGB(130, 38, 170),
 
     -- Backgrounds
-    Background      = Color3.fromRGB(12, 10, 18),
-    Surface         = Color3.fromRGB(18, 15, 26),
-    SurfaceLight    = Color3.fromRGB(26, 22, 38),
-    SurfaceHover    = Color3.fromRGB(34, 28, 50),
-    SurfaceActive   = Color3.fromRGB(40, 33, 58),
+    Background      = Color3.fromRGB(8, 4, 16),
+    Surface         = Color3.fromRGB(13, 7, 25),
+    SurfaceLight    = Color3.fromRGB(21, 12, 40),
+    SurfaceHover    = Color3.fromRGB(30, 17, 55),
+    SurfaceActive   = Color3.fromRGB(38, 22, 68),
 
     -- Sidebar
-    Sidebar         = Color3.fromRGB(14, 12, 22),
-    SidebarActive   = Color3.fromRGB(28, 23, 44),
+    Sidebar         = Color3.fromRGB(10, 5, 19),
+    SidebarActive   = Color3.fromRGB(26, 14, 46),
 
     -- Text
-    Text            = Color3.fromRGB(230, 225, 245),
-    TextDim         = Color3.fromRGB(145, 135, 170),
-    TextMuted       = Color3.fromRGB(80, 72, 105),
+    Text            = Color3.fromRGB(245, 218, 255),
+    TextDim         = Color3.fromRGB(168, 120, 195),
+    TextMuted       = Color3.fromRGB(82, 52, 105),
 
     -- Borders
-    Border          = Color3.fromRGB(38, 32, 56),
-    BorderLight     = Color3.fromRGB(52, 44, 75),
+    Border          = Color3.fromRGB(42, 18, 62),
+    BorderLight     = Color3.fromRGB(60, 28, 88),
 
     -- States
     Success         = Color3.fromRGB(75, 210, 115),
@@ -89,9 +89,9 @@ Hyperion.Theme = {
     Info            = Color3.fromRGB(100, 160, 255),
 
     -- Element specific
-    ToggleOff       = Color3.fromRGB(40, 35, 58),
-    SliderBg        = Color3.fromRGB(28, 24, 42),
-    InputBg         = Color3.fromRGB(16, 13, 24),
+    ToggleOff       = Color3.fromRGB(36, 16, 54),
+    SliderBg        = Color3.fromRGB(22, 10, 36),
+    InputBg         = Color3.fromRGB(9, 4, 17),
 
     -- Radii
     CornerRadius    = UDim.new(0, 6),
@@ -104,6 +104,7 @@ Hyperion.Theme = {
     FontSemiBold    = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.SemiBold, Enum.FontStyle.Normal),
     FontBold        = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold,     Enum.FontStyle.Normal),
 }
+Hyperion._currentThemeName = "Nebula"
 
 Hyperion.Lucide = {
     Save       = "rbxassetid://10734941499",  -- lucide-save
@@ -1195,7 +1196,7 @@ function Hyperion:CreateWindow(config)
     local windowConfig = {
         Title    = config.Title or "Hyperion",
         Logo     = config.Logo or "rbxassetid://74070104523360",
-        Size     = config.Size or UDim2.new(0, 760, 0, 540),
+        Size     = config.Size or UDim2.new(0, 880, 0, 600),
         Keybind  = config.Keybind or Enum.KeyCode.RightControl,
         Theme    = config.Theme or {},
         -- Key system
@@ -3611,7 +3612,7 @@ function Hyperion:CreateWindow(config)
         Util.AddList(container, Enum.FillDirection.Vertical, 6)
         Util.AddPadding(container, 4, 0, 4, 0)
 
-        local currentTheme = "Purple"
+        local currentTheme = "Nebula"
         local swatches = {}
 
         for _, name in ipairs(themeOrder) do
@@ -3731,10 +3732,10 @@ function Hyperion:CreateWindow(config)
         end
 
         -- Mark initial selection
-        local initSwatch = swatches["Purple"]
+        local initSwatch = swatches["Nebula"]
         if initSwatch then
             Util.TweenFast(initSwatch.row, {BackgroundTransparency = 0.1, BackgroundColor3 = Theme.SurfaceActive})
-            Util.TweenFast(initSwatch.stroke, {Color = themeColors["Purple"], Transparency = 0.3})
+            Util.TweenFast(initSwatch.stroke, {Color = themeColors["Nebula"], Transparency = 0.3})
         end
 
         -- Return the container so the caller can parent it wherever needed
@@ -5549,7 +5550,7 @@ function Hyperion:CreateWindow(config)
                     Nebula      = Color3.fromRGB(255, 100, 180),
                 }
 
-                local currentTheme = "Purple"
+                local currentTheme = "Nebula"
                 local swatches = {}
 
                 for _, name in ipairs(themeOrder) do
