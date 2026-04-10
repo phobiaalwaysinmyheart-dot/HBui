@@ -233,6 +233,78 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(30, 18, 24),
         InputBg      = Color3.fromRGB(16, 9, 12),
     },
+    StarryNight = {
+        Logo         = nil,
+        Animated     = true,  -- enables starfield animation
+        Accent       = Color3.fromRGB(80, 200, 240),
+        AccentDark   = Color3.fromRGB(50, 155, 195),
+        AccentLight  = Color3.fromRGB(110, 225, 255),
+        AccentGlow   = Color3.fromRGB(90, 210, 250),
+        AccentSub    = Color3.fromRGB(40, 130, 175),
+        Background   = Color3.fromRGB(5, 8, 22),
+        Surface      = Color3.fromRGB(9, 13, 34),
+        SurfaceLight = Color3.fromRGB(14, 20, 50),
+        SurfaceHover = Color3.fromRGB(20, 28, 65),
+        SurfaceActive= Color3.fromRGB(26, 36, 78),
+        Sidebar      = Color3.fromRGB(7, 10, 26),
+        SidebarActive= Color3.fromRGB(18, 26, 55),
+        Text         = Color3.fromRGB(220, 235, 255),
+        TextDim      = Color3.fromRGB(130, 155, 200),
+        TextMuted    = Color3.fromRGB(60, 80, 120),
+        Border       = Color3.fromRGB(25, 38, 75),
+        BorderLight  = Color3.fromRGB(38, 55, 105),
+        ToggleOff    = Color3.fromRGB(22, 33, 65),
+        SliderBg     = Color3.fromRGB(14, 22, 48),
+        InputBg      = Color3.fromRGB(7, 10, 28),
+    },
+    Aurora = {
+        Logo         = nil,
+        Animated     = true,
+        Accent       = Color3.fromRGB(60, 220, 160),
+        AccentDark   = Color3.fromRGB(35, 170, 120),
+        AccentLight  = Color3.fromRGB(90, 245, 185),
+        AccentGlow   = Color3.fromRGB(70, 230, 170),
+        AccentSub    = Color3.fromRGB(28, 140, 100),
+        Background   = Color3.fromRGB(5, 12, 14),
+        Surface      = Color3.fromRGB(8, 18, 22),
+        SurfaceLight = Color3.fromRGB(13, 28, 34),
+        SurfaceHover = Color3.fromRGB(18, 38, 46),
+        SurfaceActive= Color3.fromRGB(24, 46, 56),
+        Sidebar      = Color3.fromRGB(6, 14, 17),
+        SidebarActive= Color3.fromRGB(16, 32, 40),
+        Text         = Color3.fromRGB(215, 245, 235),
+        TextDim      = Color3.fromRGB(120, 180, 160),
+        TextMuted    = Color3.fromRGB(55, 95, 85),
+        Border       = Color3.fromRGB(22, 55, 50),
+        BorderLight  = Color3.fromRGB(34, 78, 70),
+        ToggleOff    = Color3.fromRGB(18, 46, 42),
+        SliderBg     = Color3.fromRGB(12, 30, 28),
+        InputBg      = Color3.fromRGB(6, 15, 14),
+    },
+    Nebula = {
+        Logo         = nil,
+        Animated     = true,
+        Accent       = Color3.fromRGB(255, 100, 180),
+        AccentDark   = Color3.fromRGB(200, 65, 140),
+        AccentLight  = Color3.fromRGB(255, 135, 205),
+        AccentGlow   = Color3.fromRGB(255, 115, 190),
+        AccentSub    = Color3.fromRGB(165, 50, 115),
+        Background   = Color3.fromRGB(10, 6, 18),
+        Surface      = Color3.fromRGB(16, 10, 28),
+        SurfaceLight = Color3.fromRGB(26, 16, 44),
+        SurfaceHover = Color3.fromRGB(36, 22, 58),
+        SurfaceActive= Color3.fromRGB(44, 28, 70),
+        Sidebar      = Color3.fromRGB(12, 8, 22),
+        SidebarActive= Color3.fromRGB(30, 18, 50),
+        Text         = Color3.fromRGB(248, 225, 240),
+        TextDim      = Color3.fromRGB(175, 135, 165),
+        TextMuted    = Color3.fromRGB(90, 62, 85),
+        Border       = Color3.fromRGB(48, 25, 60),
+        BorderLight  = Color3.fromRGB(68, 38, 85),
+        ToggleOff    = Color3.fromRGB(44, 24, 58),
+        SliderBg     = Color3.fromRGB(28, 15, 40),
+        InputBg      = Color3.fromRGB(12, 7, 20),
+    },
 }
 
 -- Apply a named theme or a custom table of color overrides.
@@ -262,6 +334,94 @@ function Hyperion:OnThemeChanged(fn)
         for i, v in ipairs(Hyperion.ThemeListeners) do
             if v == fn then table.remove(Hyperion.ThemeListeners, i); break end
         end
+    end
+end
+
+----------------------------------------------------------------
+-- STARFIELD ANIMATION
+----------------------------------------------------------------
+Hyperion._starConn = nil   -- RunService connection for active star loop
+Hyperion._starFrames = {}  -- live star Frame instances
+
+local function _stopStarfield()
+    if Hyperion._starConn then
+        Hyperion._starConn:Disconnect()
+        Hyperion._starConn = nil
+    end
+    for _, f in ipairs(Hyperion._starFrames) do
+        if f and f.Parent then f:Destroy() end
+    end
+    Hyperion._starFrames = {}
+end
+
+local function _startStarfield(parent)
+    _stopStarfield()
+    -- spawn a pool of twinkling star dots on the given parent frame
+    local MAX_STARS = 55
+    local ts = game:GetService("TweenService")
+
+    local function spawnStar()
+        local size = math.random(2, 5)
+        local star = Instance.new("Frame")
+        star.Name = "_HyperionStar"
+        star.BackgroundColor3 = Color3.fromRGB(200, 220, 255)
+        star.BackgroundTransparency = math.random(40, 80) / 100
+        star.BorderSizePixel = 0
+        star.Size = UDim2.new(0, size, 0, size)
+        star.Position = UDim2.new(math.random(0, 100) / 100, 0, math.random(0, 100) / 100, 0)
+        star.ZIndex = 1
+        star.Parent = parent
+        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(1,0); c.Parent = star
+
+        local function twinkle()
+            if not star or not star.Parent then return end
+            local dur = math.random(15, 35) / 10
+            local targetTr = math.random(15, 80) / 100
+            ts:Create(star, TweenInfo.new(dur, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = targetTr}):Play()
+            task.delay(dur, twinkle)
+        end
+        twinkle()
+        table.insert(Hyperion._starFrames, star)
+    end
+
+    -- spawn all stars staggered so they don't all pulse in sync
+    for i = 1, MAX_STARS do
+        task.delay(i * 0.04, function()
+            if #Hyperion._starFrames < MAX_STARS and parent and parent.Parent then
+                spawnStar()
+            end
+        end)
+    end
+
+    -- slow drift: every few seconds nudge a random star to a new position
+    local driftTimer = 0
+    Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
+        driftTimer = driftTimer + dt
+        if driftTimer >= 0.8 then
+            driftTimer = 0
+            local frames = Hyperion._starFrames
+            if #frames == 0 then return end
+            local star = frames[math.random(1, #frames)]
+            if star and star.Parent then
+                local newX = math.clamp(star.Position.X.Scale + (math.random(-8, 8) / 100), 0, 0.98)
+                local newY = math.clamp(star.Position.Y.Scale + (math.random(-5, 5) / 100), 0, 0.98)
+                ts:Create(star, TweenInfo.new(math.random(30, 60) / 10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Position = UDim2.new(newX, 0, newY, 0)
+                }):Play()
+            end
+        end
+    end)
+end
+
+-- Hook into SetTheme to start/stop animation
+local _originalSetTheme = Hyperion.SetTheme
+function Hyperion:SetTheme(nameOrTable)
+    _originalSetTheme(self, nameOrTable)
+    local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
+    if preset and preset.Animated and Hyperion._starParent then
+        _startStarfield(Hyperion._starParent)
+    else
+        _stopStarfield()
     end
 end
 
@@ -1145,6 +1305,9 @@ function Hyperion:CreateWindow(config)
     local _mfStroke = Util.AddStroke(MainFrame, Theme.Border, 1, 0.2)
     Themed(MainFrame, { BackgroundColor3 = function(t) return t.Background end })
     Themed(_mfStroke, { Color = function(t) return t.Border end })
+
+    -- Register this window's background as the star canvas
+    Hyperion._starParent = MainFrame
 
     -- Background image layer (sits behind all content, optional)
     local BgImage = Util.Create("ImageLabel", {
@@ -2763,6 +2926,7 @@ function Hyperion:CreateWindow(config)
 
     function WindowObj:Destroy()
         Hyperion.Unloaded = true
+        _stopStarfield()
         for _, conn in pairs(Hyperion.Connections) do
             pcall(function() conn:Disconnect() end)
         end
@@ -2814,11 +2978,14 @@ function Hyperion:CreateWindow(config)
     function WindowObj:AddThemePicker(section, callback)
         -- section must be a SectionObj returned by Tab:AddSection()
         local cb = callback or function() end
-        local themeOrder = {"Purple", "Midnight", "Rose"}
+        local themeOrder = {"Purple", "Midnight", "Rose", "StarryNight", "Aurora", "Nebula"}
         local themeColors = {
-            Purple   = Color3.fromRGB(140, 80, 220),
-            Midnight = Color3.fromRGB(80, 120, 255),
-                        Rose     = Color3.fromRGB(220, 80, 120),
+            Purple      = Color3.fromRGB(140, 80, 220),
+            Midnight    = Color3.fromRGB(80, 120, 255),
+            Rose        = Color3.fromRGB(220, 80, 120),
+            StarryNight = Color3.fromRGB(80, 200, 240),
+            Aurora      = Color3.fromRGB(60, 220, 160),
+            Nebula      = Color3.fromRGB(255, 100, 180),
         }
 
         -- Find the Elements frame inside the section's frame
@@ -4729,11 +4896,14 @@ function Hyperion:CreateWindow(config)
                 cfg = cfg or {}
                 local callback = cfg.Callback or function() end
 
-                local themeOrder  = {"Purple", "Midnight", "Rose"}
+                local themeOrder  = {"Purple", "Midnight", "Rose", "StarryNight", "Aurora", "Nebula"}
                 local themeAccents = {
-                    Purple   = Color3.fromRGB(140, 80, 220),
-                    Midnight = Color3.fromRGB(80, 120, 255),
-                                        Rose     = Color3.fromRGB(220, 80, 120),
+                    Purple      = Color3.fromRGB(140, 80, 220),
+                    Midnight    = Color3.fromRGB(80, 120, 255),
+                    Rose        = Color3.fromRGB(220, 80, 120),
+                    StarryNight = Color3.fromRGB(80, 200, 240),
+                    Aurora      = Color3.fromRGB(60, 220, 160),
+                    Nebula      = Color3.fromRGB(255, 100, 180),
                 }
 
                 local currentTheme = "Purple"
