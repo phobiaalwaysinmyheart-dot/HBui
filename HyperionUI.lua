@@ -236,7 +236,8 @@ Hyperion.Themes = {
     StarryNight = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(180, 210, 255),   -- cool white-blue stars
+        StarColor    = Color3.fromRGB(180, 210, 255),
+        GradientMid  = Color3.fromRGB(18, 28, 80),   -- deep indigo center
         Accent       = Color3.fromRGB(100, 160, 255),
         AccentDark   = Color3.fromRGB(65, 110, 210),
         AccentLight  = Color3.fromRGB(135, 185, 255),
@@ -286,7 +287,8 @@ Hyperion.Themes = {
     Nebula = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(255, 160, 220),   -- warm pink-magenta stars
+        StarColor    = Color3.fromRGB(255, 160, 220),
+        GradientMid  = Color3.fromRGB(45, 8, 65),    -- deep magenta-purple center
         Accent       = Color3.fromRGB(210, 80, 255),
         AccentDark   = Color3.fromRGB(160, 50, 205),
         AccentLight  = Color3.fromRGB(230, 115, 255),
@@ -459,109 +461,112 @@ local function _startStarfield(parent, starColor, meteorParent)
     end
 
     -- ── Raining / shooting stars ─────────────────────────────────
-    -- Uses Heartbeat-driven movement (pixels per second) so there's no
-    -- UDim2 scale+offset confusion. Each star is a self-contained group.
     local activeMeteors = {}
 
     local function spawnRainingStar()
         if not active or not mParent or not mParent.Parent then return end
 
-        local hasGlow = math.random(1, 5) ~= 1
+        local hasGlow  = math.random(1, 5) ~= 1  -- 80% glow
 
         local W = mParent.AbsoluteSize.X
         local H = mParent.AbsoluteSize.Y
         if W < 10 then W = 760 end
         if H < 10 then H = 540 end
 
-        -- Travel direction: mostly downward, slight right lean
-        local angleDeg = math.random(75, 105)   -- 90 = straight down; 75-105 slight diagonal
+        local angleDeg = math.random(78, 102)       -- near-vertical fall
         local angleRad = math.rad(angleDeg)
-        local speed    = math.random(180, 320)  -- pixels per second
-        local vx       = math.cos(angleRad) * speed
-        local vy       = math.sin(angleRad) * speed
+        local spd      = math.random(200, 350)       -- px/s
+        local vx       = math.cos(angleRad) * spd
+        local vy       = math.sin(angleRad) * spd
 
-        -- Start just above the top edge, random X
-        local px = math.random(0, math.floor(W))
-        local py = -10
+        local startX   = math.random(10, W - 10)
+        local startY   = -80
 
-        local tailLen  = math.random(35, 65)
+        local tailLen  = math.random(40, 80)
         local headSz   = math.random(2, 3)
-        local tailW    = 1
 
-        -- Build the meteor as individual frames positioned absolutely
-        -- Tail rotation: points opposite to direction of travel
-        local tailRot = angleDeg - 90  -- so tail trails behind the head
+        -- Single container — ALL parts are children, positioned relative to it.
+        -- Container is 1x1 at the head position. Moving it moves everything.
+        local container = Instance.new("Frame")
+        container.BackgroundTransparency = 1
+        container.BorderSizePixel = 0
+        container.Size = UDim2.fromOffset(1, 1)
+        container.Position = UDim2.fromOffset(startX, startY)
+        container.ZIndex = 4
+        container.Parent = mParent
+        table.insert(Hyperion._starFrames, container)
 
+        -- Tail: AnchorPoint(0.5,1) means its BOTTOM is at container's (0,0).
+        -- Rotation trails opposite to travel direction, so tail goes "behind" head.
+        -- angleDeg is measured from +X axis; tail should point opposite to velocity.
+        local tailRot = angleDeg - 90
         local tail = Instance.new("Frame")
         tail.BackgroundColor3 = color
         tail.BackgroundTransparency = 0
         tail.BorderSizePixel = 0
-        tail.Size = UDim2.fromOffset(tailW, tailLen)
-        tail.AnchorPoint = Vector2.new(0.5, 1)  -- head end at anchor
-        tail.Position = UDim2.fromOffset(px, py)
+        tail.Size = UDim2.fromOffset(1, tailLen)
+        tail.AnchorPoint = Vector2.new(0.5, 1)   -- bottom = head, top = tail tip
+        tail.Position = UDim2.fromOffset(0, 0)   -- sits at container origin = head
         tail.Rotation = tailRot
-        tail.ZIndex = 3
-        tail.Parent = mParent
+        tail.ZIndex = 1
+        tail.Parent = container
         local tg = Instance.new("UIGradient")
         tg.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0,   1),   -- tip = invisible
-            NumberSequenceKeypoint.new(0.4, 0.7),
-            NumberSequenceKeypoint.new(1,   0.05), -- head end = bright
+            NumberSequenceKeypoint.new(0,   1),     -- tip: fully transparent
+            NumberSequenceKeypoint.new(0.5, 0.65),
+            NumberSequenceKeypoint.new(1,   0.08),  -- base: nearly opaque
         })
         tg.Parent = tail
-        table.insert(Hyperion._starFrames, tail)
 
-        local og1, og2, head
-
+        -- Glow rings — centered on container origin (same as head)
+        local og1, og2
         if hasGlow then
             local r1 = headSz * 5
             og1 = Instance.new("Frame")
             og1.BackgroundColor3 = color
-            og1.BackgroundTransparency = 0.70
+            og1.BackgroundTransparency = 0.68
             og1.BorderSizePixel = 0
             og1.Size = UDim2.fromOffset(r1, r1)
             og1.AnchorPoint = Vector2.new(0.5, 0.5)
-            og1.Position = UDim2.fromOffset(px, py)
+            og1.Position = UDim2.fromOffset(0, 0)
             og1.ZIndex = 2
-            og1.Parent = mParent
+            og1.Parent = container
             Instance.new("UICorner", og1).CornerRadius = UDim.new(1, 0)
-            table.insert(Hyperion._starFrames, og1)
 
-            local r2 = headSz * 2.5
+            local r2 = headSz * 2.8
             og2 = Instance.new("Frame")
             og2.BackgroundColor3 = color
-            og2.BackgroundTransparency = 0.40
+            og2.BackgroundTransparency = 0.38
             og2.BorderSizePixel = 0
             og2.Size = UDim2.fromOffset(r2, r2)
             og2.AnchorPoint = Vector2.new(0.5, 0.5)
-            og2.Position = UDim2.fromOffset(px, py)
+            og2.Position = UDim2.fromOffset(0, 0)
             og2.ZIndex = 3
-            og2.Parent = mParent
+            og2.Parent = container
             Instance.new("UICorner", og2).CornerRadius = UDim.new(1, 0)
-            table.insert(Hyperion._starFrames, og2)
         end
 
-        head = Instance.new("Frame")
+        -- Bright white core — centered on container origin
+        local head = Instance.new("Frame")
         head.BackgroundColor3 = Color3.new(1, 1, 1)
         head.BackgroundTransparency = 0
         head.BorderSizePixel = 0
         head.Size = UDim2.fromOffset(headSz, headSz)
         head.AnchorPoint = Vector2.new(0.5, 0.5)
-        head.Position = UDim2.fromOffset(px, py)
+        head.Position = UDim2.fromOffset(0, 0)
         head.ZIndex = 5
-        head.Parent = mParent
+        head.Parent = container
         Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
-        table.insert(Hyperion._starFrames, head)
 
-        -- Track state for Heartbeat update
         local meteor = {
-            x = px, y = py,
+            x = startX, y = startY,
             vx = vx, vy = vy,
-            tail = tail, head = head,
+            container = container,
+            head = head,
             og1 = og1, og2 = og2,
             alive = true,
-            maxY = H + tailLen + 20,
-            fadeStart = H * 0.75,  -- start fading at 75% down
+            maxY = H + 100,
+            fadeStart = H * 0.72,
         }
         table.insert(activeMeteors, meteor)
     end
@@ -570,10 +575,9 @@ local function _startStarfield(parent, starColor, meteorParent)
     Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
         if not active then return end
 
-        -- Step all meteors
         for i = #activeMeteors, 1, -1 do
             local m = activeMeteors[i]
-            if not m.alive or not m.head or not m.head.Parent then
+            if not m.alive or not m.container or not m.container.Parent then
                 table.remove(activeMeteors, i)
                 continue
             end
@@ -581,27 +585,20 @@ local function _startStarfield(parent, starColor, meteorParent)
             m.x = m.x + m.vx * dt
             m.y = m.y + m.vy * dt
 
-            -- Update positions
-            m.head.Position = UDim2.fromOffset(m.x, m.y)
-            m.tail.Position = UDim2.fromOffset(m.x, m.y)
-            if m.og1 then m.og1.Position = UDim2.fromOffset(m.x, m.y) end
-            if m.og2 then m.og2.Position = UDim2.fromOffset(m.x, m.y) end
+            -- Move only the container — all children follow automatically
+            m.container.Position = UDim2.fromOffset(m.x, m.y)
 
-            -- Fade out in lower quarter
+            -- Fade out in bottom quarter
             if m.y > m.fadeStart then
                 local t = math.clamp((m.y - m.fadeStart) / (m.maxY - m.fadeStart), 0, 1)
                 m.head.BackgroundTransparency = t
-                if m.og1 then m.og1.BackgroundTransparency = 0.70 + t * 0.30 end
-                if m.og2 then m.og2.BackgroundTransparency = 0.40 + t * 0.60 end
+                if m.og1 then m.og1.BackgroundTransparency = 0.68 + t * 0.32 end
+                if m.og2 then m.og2.BackgroundTransparency = 0.38 + t * 0.62 end
             end
 
-            -- Destroy when off screen
             if m.y > m.maxY then
                 m.alive = false
-                if m.tail and m.tail.Parent then m.tail:Destroy() end
-                if m.head and m.head.Parent then m.head:Destroy() end
-                if m.og1  and m.og1.Parent  then m.og1:Destroy()  end
-                if m.og2  and m.og2.Parent  then m.og2:Destroy()  end
+                if m.container and m.container.Parent then m.container:Destroy() end
                 table.remove(activeMeteors, i)
             end
         end
@@ -612,12 +609,11 @@ local function _startStarfield(parent, starColor, meteorParent)
         if not Hyperion._rainInterval then Hyperion._rainInterval = math.random(10, 22) / 10 end
         if Hyperion._rainTimer >= Hyperion._rainInterval then
             Hyperion._rainTimer = 0
-            Hyperion._rainInterval = math.random(12, 25) / 10
+            Hyperion._rainInterval = math.random(14, 28) / 10
             if parent and parent.Parent then
                 spawnRainingStar()
                 if math.random(1, 3) == 1 then
-                    -- double burst
-                    task.delay(math.random(1, 4) / 10, function()
+                    task.delay(math.random(1, 5) / 10, function()
                         if active and parent and parent.Parent then spawnRainingStar() end
                     end)
                 end
@@ -642,18 +638,18 @@ function Hyperion:SetTheme(nameOrTable)
     if Hyperion._bgGradient then
         if preset and preset.Animated then
             local bg  = preset.Background
-            local mid = preset.AccentSub
-            -- Blend: corners = bg, center = bg tinted with accent
-            local cx = math.clamp(bg.R * 0.45 + mid.R * 0.55, 0, 1)
-            local cy = math.clamp(bg.G * 0.45 + mid.G * 0.55, 0, 1)
-            local cz = math.clamp(bg.B * 0.45 + mid.B * 0.55, 0, 1)
+            -- Use explicit GradientMid if defined, else derive from Accent
+            local mid = preset.GradientMid or preset.Accent
+            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
+            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
+            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
             Hyperion._bgGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
                 ColorSequenceKeypoint.new(1,    bg),
             })
         else
-            -- Flat: reset to solid background so no gradient shows
             local bg = Hyperion.Theme.Background
             Hyperion._bgGradient.Color = ColorSequence.new(bg, bg)
         end
@@ -1587,14 +1583,15 @@ function Hyperion:CreateWindow(config)
         local currentPreset = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
         if currentPreset and currentPreset.Animated then
             local bg  = currentPreset.Background
-            local mid = currentPreset.AccentSub
-            local cx = math.clamp(bg.R * 0.45 + mid.R * 0.55, 0, 1)
-            local cy = math.clamp(bg.G * 0.45 + mid.G * 0.55, 0, 1)
-            local cz = math.clamp(bg.B * 0.45 + mid.B * 0.55, 0, 1)
+            local mid = currentPreset.GradientMid or currentPreset.Accent
+            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
+            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
+            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
             _bgGradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,   bg),
-                ColorSequenceKeypoint.new(0.5, Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(1,   bg),
+                ColorSequenceKeypoint.new(0,    bg),
+                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(1,    bg),
             })
         end
     end
