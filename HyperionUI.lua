@@ -344,6 +344,10 @@ Hyperion._starConn = nil   -- RunService connection for active star loop
 Hyperion._starFrames = {}  -- live star Frame instances
 
 local function _stopStarfield()
+    if Hyperion._starActive then
+        Hyperion._starActive()
+        Hyperion._starActive = nil
+    end
     if Hyperion._starConn then
         Hyperion._starConn:Disconnect()
         Hyperion._starConn = nil
@@ -356,61 +360,103 @@ end
 
 local function _startStarfield(parent)
     _stopStarfield()
-    -- spawn a pool of twinkling star dots on the given parent frame
-    local MAX_STARS = 55
+    local MAX_STARS = 45
     local ts = game:GetService("TweenService")
+    local active = true
 
+    -- Each star has a core dot + a larger glow halo behind it.
+    -- Lifecycle: fade in → hold → fade out → destroy → respawn elsewhere.
     local function spawnStar()
-        local size = math.random(2, 5)
-        local star = Instance.new("Frame")
-        star.Name = "_HyperionStar"
-        star.BackgroundColor3 = Color3.fromRGB(200, 220, 255)
-        star.BackgroundTransparency = math.random(40, 80) / 100
-        star.BorderSizePixel = 0
-        star.Size = UDim2.new(0, size, 0, size)
-        star.Position = UDim2.new(math.random(0, 100) / 100, 0, math.random(0, 100) / 100, 0)
-        star.ZIndex = 1
-        star.Parent = parent
-        local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(1,0); c.Parent = star
+        if not active or not parent or not parent.Parent then return end
 
-        local function twinkle()
-            if not star or not star.Parent then return end
-            local dur = math.random(15, 35) / 10
-            local targetTr = math.random(15, 80) / 100
-            ts:Create(star, TweenInfo.new(dur, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {BackgroundTransparency = targetTr}):Play()
-            task.delay(dur, twinkle)
+        local coreSize  = math.random(2, 4)
+        local glowSize  = coreSize * math.random(4, 7)  -- halo is 4-7x the core
+        local px = math.random(2, 97) / 100
+        local py = math.random(2, 97) / 100
+        local fadeIn  = math.random(15, 30) / 10   -- 1.5 – 3s fade in
+        local hold    = math.random(20, 55) / 10   -- 2 – 5.5s stay bright
+        local fadeOut = math.random(20, 40) / 10   -- 2 – 4s fade out
+        local pause   = math.random(10, 40) / 10   -- 1 – 4s dark pause before respawn
+
+        -- Glow halo (rendered first so it sits behind the core)
+        local glow = Instance.new("Frame")
+        glow.Name = "_HyperionGlow"
+        glow.BackgroundColor3 = Color3.fromRGB(180, 215, 255)
+        glow.BackgroundTransparency = 1  -- start invisible
+        glow.BorderSizePixel = 0
+        glow.Size = UDim2.new(0, glowSize, 0, glowSize)
+        glow.Position = UDim2.new(px, -glowSize/2, py, -glowSize/2)
+        glow.ZIndex = 1
+        glow.Parent = parent
+        local gc = Instance.new("UICorner"); gc.CornerRadius = UDim.new(1,0); gc.Parent = glow
+
+        -- Core star dot
+        local core = Instance.new("Frame")
+        core.Name = "_HyperionStar"
+        core.BackgroundColor3 = Color3.fromRGB(220, 235, 255)
+        core.BackgroundTransparency = 1
+        core.BorderSizePixel = 0
+        core.Size = UDim2.new(0, coreSize, 0, coreSize)
+        core.Position = UDim2.new(px, -coreSize/2, py, -coreSize/2)
+        core.ZIndex = 2
+        core.Parent = parent
+        local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(1,0); cc.Parent = core
+
+        table.insert(Hyperion._starFrames, glow)
+        table.insert(Hyperion._starFrames, core)
+
+        local function cleanup()
+            if glow and glow.Parent then glow:Destroy() end
+            if core and core.Parent then core:Destroy() end
+            -- remove from table
+            for i = #Hyperion._starFrames, 1, -1 do
+                local f = Hyperion._starFrames[i]
+                if f == glow or f == core then
+                    table.remove(Hyperion._starFrames, i)
+                end
+            end
         end
-        twinkle()
-        table.insert(Hyperion._starFrames, star)
+
+        local function cycle()
+            if not active or not parent or not parent.Parent then cleanup(); return end
+
+            -- Fade IN
+            ts:Create(core, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.05}):Play()
+            ts:Create(glow, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.72}):Play()
+
+            task.delay(fadeIn + hold, function()
+                if not active then cleanup(); return end
+                -- Fade OUT
+                ts:Create(core, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
+                ts:Create(glow, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
+
+                task.delay(fadeOut + pause, function()
+                    if not active then cleanup(); return end
+                    -- Reposition to a new random spot then cycle again
+                    local nx = math.random(2, 97) / 100
+                    local ny = math.random(2, 97) / 100
+                    core.Position = UDim2.new(nx, -coreSize/2, ny, -coreSize/2)
+                    glow.Position = UDim2.new(nx, -glowSize/2, ny, -glowSize/2)
+                    cycle()
+                end)
+            end)
+        end
+
+        -- Stagger the initial start so not all stars appear at once
+        task.delay(math.random(0, 60) / 10, cycle)
     end
 
-    -- spawn all stars staggered so they don't all pulse in sync
     for i = 1, MAX_STARS do
-        task.delay(i * 0.04, function()
-            if #Hyperion._starFrames < MAX_STARS and parent and parent.Parent then
+        task.delay(i * 0.05, function()
+            if active and parent and parent.Parent then
                 spawnStar()
             end
         end)
     end
 
-    -- slow drift: every few seconds nudge a random star to a new position
-    local driftTimer = 0
-    Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
-        driftTimer = driftTimer + dt
-        if driftTimer >= 0.8 then
-            driftTimer = 0
-            local frames = Hyperion._starFrames
-            if #frames == 0 then return end
-            local star = frames[math.random(1, #frames)]
-            if star and star.Parent then
-                local newX = math.clamp(star.Position.X.Scale + (math.random(-8, 8) / 100), 0, 0.98)
-                local newY = math.clamp(star.Position.Y.Scale + (math.random(-5, 5) / 100), 0, 0.98)
-                ts:Create(star, TweenInfo.new(math.random(30, 60) / 10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                    Position = UDim2.new(newX, 0, newY, 0)
-                }):Play()
-            end
-        end
-    end)
+    -- Keep a connection alive so _stopStarfield can kill the `active` flag via disconnect
+    Hyperion._starActive = function() active = false end
+    Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function() end)
 end
 
 -- Hook into SetTheme to start/stop animation
