@@ -458,137 +458,178 @@ local function _startStarfield(parent, starColor)
     end
 
     -- ── Raining / shooting stars ─────────────────────────────────
+    -- Uses Heartbeat-driven movement (pixels per second) so there's no
+    -- UDim2 scale+offset confusion. Each star is a self-contained group.
+    local activeMeteors = {}
+
     local function spawnRainingStar()
         if not active or not parent or not parent.Parent then return end
 
-        local hasGlow = math.random(1, 5) ~= 1  -- 80% have glow, 20% don't
+        local hasGlow = math.random(1, 5) ~= 1  -- 80% glow, 20% bare
 
-        -- Use pixel travel so direction is exact
-        -- Stars fall from top, drift slightly right
-        local startX = math.random(0, 90) / 100
-        local driftX = math.random(30, 80)   -- pixels right
-        local driftY = math.random(200, 380) -- pixels down
-        local tailLen = math.random(40, 75)
-        local headSz  = math.random(2, 3)
-        local speed   = math.random(20, 38) / 10
+        -- Fixed pixel dimensions of the canvas
+        local W = parent.AbsoluteSize.X
+        local H = parent.AbsoluteSize.Y
+        if W < 10 then W = 760 end
+        if H < 10 then H = 540 end
 
-        -- Rotation: atan2(driftY, driftX) gives the angle of travel
-        local rot = math.deg(math.atan2(driftX, driftY))  -- degrees clockwise from down
+        -- Travel direction: mostly downward, slight right lean
+        local angleDeg = math.random(75, 105)   -- 90 = straight down; 75-105 slight diagonal
+        local angleRad = math.rad(angleDeg)
+        local speed    = math.random(180, 320)  -- pixels per second
+        local vx       = math.cos(angleRad) * speed
+        local vy       = math.sin(angleRad) * speed
 
-        -- Container moves, children stay at origin
-        local container = Instance.new("Frame")
-        container.BackgroundTransparency = 1
-        container.BorderSizePixel = 0
-        container.Size = UDim2.new(0, 1, 0, 1)
-        container.Position = UDim2.new(startX, 0, -0.02, 0)
-        container.ZIndex = 2
-        container.Parent = parent
-        table.insert(Hyperion._starFrames, container)
+        -- Start just above the top edge, random X
+        local px = math.random(0, math.floor(W))
+        local py = -10
 
-        -- Tail: anchored at bottom (head end), extends upward (away from direction of travel)
+        local tailLen  = math.random(35, 65)
+        local headSz   = math.random(2, 3)
+        local tailW    = 1
+
+        -- Build the meteor as individual frames positioned absolutely
+        -- Tail rotation: points opposite to direction of travel
+        local tailRot = angleDeg - 90  -- so tail trails behind the head
+
         local tail = Instance.new("Frame")
         tail.BackgroundColor3 = color
         tail.BackgroundTransparency = 0
         tail.BorderSizePixel = 0
-        tail.Size = UDim2.new(0, 1, 0, tailLen)
-        tail.AnchorPoint = Vector2.new(0.5, 1)  -- bottom of tail = head position
-        tail.Position = UDim2.new(0, 0, 0, 0)   -- at container origin
-        tail.Rotation = rot                       -- rotated to match travel direction
-        tail.ZIndex = 2
-        tail.Parent = container
-        -- Gradient: top of tail (tip) = transparent, bottom (head) = solid
+        tail.Size = UDim2.fromOffset(tailW, tailLen)
+        tail.AnchorPoint = Vector2.new(0.5, 1)  -- head end at anchor
+        tail.Position = UDim2.fromOffset(px, py)
+        tail.Rotation = tailRot
+        tail.ZIndex = 3
+        tail.Parent = parent
         local tg = Instance.new("UIGradient")
         tg.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0,   1),
-            NumberSequenceKeypoint.new(0.5, 0.6),
-            NumberSequenceKeypoint.new(1,   0.1),
+            NumberSequenceKeypoint.new(0,   1),   -- tip = invisible
+            NumberSequenceKeypoint.new(0.4, 0.7),
+            NumberSequenceKeypoint.new(1,   0.05), -- head end = bright
         })
         tg.Parent = tail
+        table.insert(Hyperion._starFrames, tail)
 
-        -- Outer glow (only if hasGlow)
-        local outerGlow, innerGlow
+        local og1, og2, head
+
         if hasGlow then
-            local og = headSz * 6
-            outerGlow = Instance.new("Frame")
-            outerGlow.BackgroundColor3 = color
-            outerGlow.BackgroundTransparency = 0.72
-            outerGlow.BorderSizePixel = 0
-            outerGlow.Size = UDim2.new(0, og, 0, og)
-            outerGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-            outerGlow.Position = UDim2.new(0, 0, 0, 0)
-            outerGlow.ZIndex = 2
-            outerGlow.Parent = container
-            Instance.new("UICorner", outerGlow).CornerRadius = UDim.new(1, 0)
+            local r1 = headSz * 5
+            og1 = Instance.new("Frame")
+            og1.BackgroundColor3 = color
+            og1.BackgroundTransparency = 0.70
+            og1.BorderSizePixel = 0
+            og1.Size = UDim2.fromOffset(r1, r1)
+            og1.AnchorPoint = Vector2.new(0.5, 0.5)
+            og1.Position = UDim2.fromOffset(px, py)
+            og1.ZIndex = 2
+            og1.Parent = parent
+            Instance.new("UICorner", og1).CornerRadius = UDim.new(1, 0)
+            table.insert(Hyperion._starFrames, og1)
 
-            local ig2 = headSz * 3
-            innerGlow = Instance.new("Frame")
-            innerGlow.BackgroundColor3 = color
-            innerGlow.BackgroundTransparency = 0.45
-            innerGlow.BorderSizePixel = 0
-            innerGlow.Size = UDim2.new(0, ig2, 0, ig2)
-            innerGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-            innerGlow.Position = UDim2.new(0, 0, 0, 0)
-            innerGlow.ZIndex = 3
-            innerGlow.Parent = container
-            Instance.new("UICorner", innerGlow).CornerRadius = UDim.new(1, 0)
+            local r2 = headSz * 2.5
+            og2 = Instance.new("Frame")
+            og2.BackgroundColor3 = color
+            og2.BackgroundTransparency = 0.40
+            og2.BorderSizePixel = 0
+            og2.Size = UDim2.fromOffset(r2, r2)
+            og2.AnchorPoint = Vector2.new(0.5, 0.5)
+            og2.Position = UDim2.fromOffset(px, py)
+            og2.ZIndex = 3
+            og2.Parent = parent
+            Instance.new("UICorner", og2).CornerRadius = UDim.new(1, 0)
+            table.insert(Hyperion._starFrames, og2)
         end
 
-        -- White core dot
-        local head = Instance.new("Frame")
+        head = Instance.new("Frame")
         head.BackgroundColor3 = Color3.new(1, 1, 1)
         head.BackgroundTransparency = 0
         head.BorderSizePixel = 0
-        head.Size = UDim2.new(0, headSz, 0, headSz)
+        head.Size = UDim2.fromOffset(headSz, headSz)
         head.AnchorPoint = Vector2.new(0.5, 0.5)
-        head.Position = UDim2.new(0, 0, 0, 0)
+        head.Position = UDim2.fromOffset(px, py)
         head.ZIndex = 5
-        head.Parent = container
+        head.Parent = parent
         Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
+        table.insert(Hyperion._starFrames, head)
 
-        -- Tween just the container
-        local ts2 = game:GetService("TweenService")
-        local ti  = TweenInfo.new(speed, Enum.EasingStyle.Linear)
-        ts2:Create(container, ti, {
-            Position = UDim2.new(startX, driftX, -0.02, driftY),
-            BackgroundTransparency = 1,  -- unused but harmless
-        }):Play()
-        -- Fade head + glows near end
-        task.delay(speed * 0.65, function()
-            if not active or not container.Parent then return end
-            local fadeDur = speed * 0.35
-            local fti = TweenInfo.new(fadeDur, Enum.EasingStyle.Sine)
-            ts2:Create(head, fti, {BackgroundTransparency = 1}):Play()
-            if outerGlow then ts2:Create(outerGlow, fti, {BackgroundTransparency = 1}):Play() end
-            if innerGlow then ts2:Create(innerGlow, fti, {BackgroundTransparency = 1}):Play() end
-        end)
-
-        task.delay(speed + 0.1, function()
-            if container and container.Parent then container:Destroy() end
-        end)
+        -- Track state for Heartbeat update
+        local meteor = {
+            x = px, y = py,
+            vx = vx, vy = vy,
+            tail = tail, head = head,
+            og1 = og1, og2 = og2,
+            alive = true,
+            maxY = H + tailLen + 20,
+            fadeStart = H * 0.75,  -- start fading at 75% down
+        }
+        table.insert(activeMeteors, meteor)
     end
 
-    -- Spawn raining stars on a loop
-    local rainTimer = 0
-    local rainInterval = math.random(8, 18) / 10  -- first one after 0.8–1.8s
+    -- Single Heartbeat drives all meteors
     Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
         if not active then return end
-        rainTimer = rainTimer + dt
-        if rainTimer >= rainInterval then
-            rainTimer = 0
-            rainInterval = math.random(12, 28) / 10  -- next one 1.2–2.8s later
+
+        -- Step all meteors
+        for i = #activeMeteors, 1, -1 do
+            local m = activeMeteors[i]
+            if not m.alive or not m.head or not m.head.Parent then
+                table.remove(activeMeteors, i)
+                continue
+            end
+
+            m.x = m.x + m.vx * dt
+            m.y = m.y + m.vy * dt
+
+            -- Update positions
+            m.head.Position = UDim2.fromOffset(m.x, m.y)
+            m.tail.Position = UDim2.fromOffset(m.x, m.y)
+            if m.og1 then m.og1.Position = UDim2.fromOffset(m.x, m.y) end
+            if m.og2 then m.og2.Position = UDim2.fromOffset(m.x, m.y) end
+
+            -- Fade out in lower quarter
+            if m.y > m.fadeStart then
+                local t = math.clamp((m.y - m.fadeStart) / (m.maxY - m.fadeStart), 0, 1)
+                m.head.BackgroundTransparency = t
+                if m.og1 then m.og1.BackgroundTransparency = 0.70 + t * 0.30 end
+                if m.og2 then m.og2.BackgroundTransparency = 0.40 + t * 0.60 end
+            end
+
+            -- Destroy when off screen
+            if m.y > m.maxY then
+                m.alive = false
+                if m.tail and m.tail.Parent then m.tail:Destroy() end
+                if m.head and m.head.Parent then m.head:Destroy() end
+                if m.og1  and m.og1.Parent  then m.og1:Destroy()  end
+                if m.og2  and m.og2.Parent  then m.og2:Destroy()  end
+                table.remove(activeMeteors, i)
+            end
+        end
+
+        -- Spawn timing
+        if not Hyperion._rainTimer then Hyperion._rainTimer = 0 end
+        Hyperion._rainTimer = Hyperion._rainTimer + dt
+        if not Hyperion._rainInterval then Hyperion._rainInterval = math.random(10, 22) / 10 end
+        if Hyperion._rainTimer >= Hyperion._rainInterval then
+            Hyperion._rainTimer = 0
+            Hyperion._rainInterval = math.random(12, 25) / 10
             if parent and parent.Parent then
                 spawnRainingStar()
-                -- occasionally spawn a second one slightly offset
                 if math.random(1, 3) == 1 then
-                    task.delay(math.random(2, 6) / 10, function()
-                        if active then spawnRainingStar() end
+                    -- double burst
+                    task.delay(math.random(1, 4) / 10, function()
+                        if active and parent and parent.Parent then spawnRainingStar() end
                     end)
                 end
             end
         end
     end)
 
-    Hyperion._starActive = function() active = false end
+    Hyperion._starActive = function()
+        active = false
+        activeMeteors = {}
+        Hyperion._rainTimer = 0
+    end
 end
 
 -- Hook into SetTheme to start/stop animation
