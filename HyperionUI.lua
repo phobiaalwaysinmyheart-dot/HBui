@@ -456,82 +456,97 @@ local function _startStarfield(parent, starColor)
     end
 
     -- ── Raining / shooting stars ─────────────────────────────────
-    -- These are thin elongated streaks that fall diagonally with a glowing head
     local function spawnRainingStar()
         if not active or not parent or not parent.Parent then return end
 
-        local parentSize = parent.AbsoluteSize
-        if parentSize.X == 0 then parentSize = Vector2.new(760, 540) end
+        local headSize  = math.random(2, 3)
+        local tailLen   = math.random(45, 90)
+        local startX    = math.random(5, 95) / 100
+        local startY    = math.random(-5, 20) / 100
+        local speed     = math.random(22, 42) / 10
+        -- angle: mostly straight down with slight rightward drift
+        local angleDeg  = math.random(200, 250)   -- 200-250° = downward + slight right
+        local angleRad  = math.rad(angleDeg)
+        local travelX   = math.cos(angleRad) * 0.22
+        local travelY   = math.sin(angleRad) * -0.65  -- negative because Y increases downward in UDim2
+        -- tail rotation to match direction
+        local tailRot   = angleDeg - 180
 
-        local headSize = math.random(2, 3)
-        local tailLen  = math.random(30, 70)
-        local startX   = math.random(0, 100) / 100
-        local startY   = math.random(-10, 30) / 100   -- start above or near top
-        local angle    = math.rad(math.random(55, 75)) -- mostly downward, slight diagonal
-        local speed    = math.random(18, 32) / 10      -- travel time in seconds
-        local dx = math.cos(angle) * 0.18
-        local dy = math.sin(angle) * 0.55
-
-        -- Tail (thin rectangle, rotated)
+        -- Tail: thin, longer, with gradient fade tip→head
         local tail = Instance.new("Frame")
         tail.BackgroundColor3 = color
-        tail.BackgroundTransparency = 0.4
+        tail.BackgroundTransparency = 0
         tail.BorderSizePixel = 0
         tail.Size = UDim2.new(0, 1, 0, tailLen)
         tail.Position = UDim2.new(startX, 0, startY, 0)
         tail.AnchorPoint = Vector2.new(0.5, 1)
-        tail.Rotation = math.deg(angle) - 90
+        tail.Rotation = tailRot
         tail.ZIndex = 2
         tail.Parent = parent
-        -- Gradient fade on tail
-        local tailGrad = Instance.new("UIGradient")
-        tailGrad.Rotation = 0
-        tailGrad.Color = ColorSequence.new(Color3.new(1,1,1), Color3.new(1,1,1))
-        tailGrad.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 1),    -- tip: transparent
-            NumberSequenceKeypoint.new(1, 0.2),  -- head end: opaque
+        -- Gradient: tip=fully transparent → head=visible
+        local tg = Instance.new("UIGradient")
+        tg.Rotation = 0
+        tg.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0,   1),
+            NumberSequenceKeypoint.new(0.6, 0.5),
+            NumberSequenceKeypoint.new(1,   0.05),
         })
-        tailGrad.Parent = tail
+        tg.Parent = tail
         table.insert(Hyperion._starFrames, tail)
 
-        -- Glowing head
+        -- Outer glow ring on head (largest, most transparent)
+        local og = headSize * 7
+        local outerGlow = Instance.new("Frame")
+        outerGlow.BackgroundColor3 = color
+        outerGlow.BackgroundTransparency = 0.75
+        outerGlow.BorderSizePixel = 0
+        outerGlow.Size = UDim2.new(0, og, 0, og)
+        outerGlow.Position = UDim2.new(startX, -og/2, startY, -og/2)
+        outerGlow.ZIndex = 2
+        outerGlow.Parent = parent
+        Instance.new("UICorner", outerGlow).CornerRadius = UDim.new(1,0)
+        table.insert(Hyperion._starFrames, outerGlow)
+
+        -- Inner glow ring
+        local ig = headSize * 3.5
+        local innerGlow = Instance.new("Frame")
+        innerGlow.BackgroundColor3 = color
+        innerGlow.BackgroundTransparency = 0.45
+        innerGlow.BorderSizePixel = 0
+        innerGlow.Size = UDim2.new(0, ig, 0, ig)
+        innerGlow.Position = UDim2.new(startX, -ig/2, startY, -ig/2)
+        innerGlow.ZIndex = 3
+        innerGlow.Parent = parent
+        Instance.new("UICorner", innerGlow).CornerRadius = UDim.new(1,0)
+        table.insert(Hyperion._starFrames, innerGlow)
+
+        -- Bright white core head
         local head = Instance.new("Frame")
-        head.BackgroundColor3 = Color3.new(1,1,1)
-        head.BackgroundTransparency = 0.05
+        head.BackgroundColor3 = Color3.new(1, 1, 1)
+        head.BackgroundTransparency = 0
         head.BorderSizePixel = 0
         head.Size = UDim2.new(0, headSize, 0, headSize)
         head.Position = UDim2.new(startX, -headSize/2, startY, -headSize/2)
-        head.ZIndex = 4
+        head.ZIndex = 5
         head.Parent = parent
-        local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(1,0); hc.Parent = head
+        Instance.new("UICorner", head).CornerRadius = UDim.new(1,0)
         table.insert(Hyperion._starFrames, head)
 
-        -- Head glow ring
-        local hgSize = headSize * 4
-        local hg = Instance.new("Frame")
-        hg.BackgroundColor3 = color
-        hg.BackgroundTransparency = 0.55
-        hg.BorderSizePixel = 0
-        hg.Size = UDim2.new(0, hgSize, 0, hgSize)
-        hg.Position = UDim2.new(startX, -hgSize/2, startY, -hgSize/2)
-        hg.ZIndex = 3
-        hg.Parent = parent
-        local hgc = Instance.new("UICorner"); hgc.CornerRadius = UDim.new(1,0); hgc.Parent = hg
-        table.insert(Hyperion._starFrames, hg)
+        local endX = startX + travelX
+        local endY = startY + travelY
+        local ti   = TweenInfo.new(speed, Enum.EasingStyle.Linear)
 
-        -- Tween all three downward
-        local endX = startX + dx
-        local endY = startY + dy
-        local ti = TweenInfo.new(speed, Enum.EasingStyle.Linear)
+        -- Move everything, fade out toward the end
+        game:GetService("TweenService"):Create(tail,       ti, {Position = UDim2.new(endX, 0,          endY, 0),          BackgroundTransparency = 1}):Play()
+        game:GetService("TweenService"):Create(head,       ti, {Position = UDim2.new(endX, -headSize/2, endY, -headSize/2), BackgroundTransparency = 1}):Play()
+        game:GetService("TweenService"):Create(innerGlow,  ti, {Position = UDim2.new(endX, -ig/2,      endY, -ig/2),      BackgroundTransparency = 1}):Play()
+        game:GetService("TweenService"):Create(outerGlow,  ti, {Position = UDim2.new(endX, -og/2,      endY, -og/2),      BackgroundTransparency = 1}):Play()
 
-        ts:Create(tail, ti, {Position = UDim2.new(endX, 0, endY, 0), BackgroundTransparency = 1}):Play()
-        ts:Create(head, ti, {Position = UDim2.new(endX, -headSize/2, endY, -headSize/2), BackgroundTransparency = 1}):Play()
-        ts:Create(hg,   ti, {Position = UDim2.new(endX, -hgSize/2,  endY, -hgSize/2),  BackgroundTransparency = 1}):Play()
-
-        task.delay(speed + 0.1, function()
-            if tail and tail.Parent then tail:Destroy() end
-            if head and head.Parent then head:Destroy() end
-            if hg   and hg.Parent   then hg:Destroy()   end
+        task.delay(speed + 0.2, function()
+            if tail       and tail.Parent       then tail:Destroy()       end
+            if head       and head.Parent       then head:Destroy()       end
+            if innerGlow  and innerGlow.Parent  then innerGlow:Destroy()  end
+            if outerGlow  and outerGlow.Parent  then outerGlow:Destroy()  end
         end)
     end
 
@@ -565,23 +580,24 @@ function Hyperion:SetTheme(nameOrTable)
     _originalSetTheme(self, nameOrTable)
     Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
     local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
-    -- Apply / clear gradient
-    if Hyperion._gradientBg and Hyperion._bgGradient then
+    -- Apply gradient directly onto MainFrame's UIGradient
+    if Hyperion._bgGradient then
         if preset and preset.Animated then
             local bg  = preset.Background
             local mid = preset.AccentSub
+            -- Blend: corners = bg, center = bg tinted with accent
+            local cx = math.clamp(bg.R * 0.45 + mid.R * 0.55, 0, 1)
+            local cy = math.clamp(bg.G * 0.45 + mid.G * 0.55, 0, 1)
+            local cz = math.clamp(bg.B * 0.45 + mid.B * 0.55, 0, 1)
             Hyperion._bgGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.45, Color3.new(
-                    bg.R * 0.5 + mid.R * 0.5,
-                    bg.G * 0.5 + mid.G * 0.5,
-                    bg.B * 0.5 + mid.B * 0.5
-                )),
+                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
                 ColorSequenceKeypoint.new(1,    bg),
             })
-            Hyperion._gradientBg.BackgroundTransparency = 0
         else
-            Hyperion._gradientBg.BackgroundTransparency = 1
+            -- Flat: reset to solid background so no gradient shows
+            local bg = Hyperion.Theme.Background
+            Hyperion._bgGradient.Color = ColorSequence.new(bg, bg)
         end
     end
     if preset and preset.Animated and Hyperion._starParent then
@@ -1475,54 +1491,17 @@ function Hyperion:CreateWindow(config)
     -- Register this window's background as the star canvas
     Hyperion._starParent = MainFrame
 
-    -- Gradient background for animated themes (sits just above the flat bg color)
-    local GradientBg = Util.Create("Frame", {
-        Name             = "GradientBg",
-        BackgroundColor3 = Theme.Background,
-        BackgroundTransparency = 1,  -- hidden by default
-        Size             = UDim2.new(1, 0, 1, 0),
-        BorderSizePixel  = 0,
-        ZIndex           = 0,
-        ClipsDescendants = true,
-        Parent           = MainFrame,
-    })
-    Util.AddCorner(GradientBg, Theme.CornerLarge)
+    -- Gradient applied directly to MainFrame via UIGradient
+    -- (a child Frame at ZIndex 0 doesn't actually go behind the bg color)
     local _bgGradient = Instance.new("UIGradient")
-    _bgGradient.Rotation = 135
-    _bgGradient.Parent = GradientBg
+    _bgGradient.Rotation = 125
+    _bgGradient.Color = ColorSequence.new(Theme.Background, Theme.Background)
+    _bgGradient.Parent = MainFrame
 
-    Hyperion._gradientBg = GradientBg
     Hyperion._bgGradient = _bgGradient
 
-    -- Apply gradient when theme changes
-    local function _applyGradientForTheme(nameOrTable)
-        local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
-        if not preset or not preset.Animated then
-            GradientBg.BackgroundTransparency = 1
-            return
-        end
-        -- Build gradient from Background → a slightly lighter accent-tinted mid → Background
-        local bg  = preset.Background
-        local mid = preset.AccentSub
-        _bgGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,    bg),
-            ColorSequenceKeypoint.new(0.45, Color3.new(
-                bg.R * 0.55 + mid.R * 0.45,
-                bg.G * 0.55 + mid.G * 0.45,
-                bg.B * 0.55 + mid.B * 0.45
-            )),
-            ColorSequenceKeypoint.new(1,    bg),
-        })
-        _bgGradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0,    0),
-            NumberSequenceKeypoint.new(0.5,  0),
-            NumberSequenceKeypoint.new(1,    0),
-        })
-        GradientBg.BackgroundTransparency = 0
-    end
-
     Hyperion:OnThemeChanged(function()
-        _applyGradientForTheme(Hyperion._currentThemeName or "Purple")
+        -- gradient is driven by SetTheme override above; nothing needed here
     end)
 
     -- Background image layer (sits behind all content, optional)
