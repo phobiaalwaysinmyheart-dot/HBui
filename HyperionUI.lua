@@ -336,6 +336,131 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(22, 10, 36),
         InputBg      = Color3.fromRGB(9, 4, 17),
     },
+    Sunset = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(255, 200, 120),
+        GradientStops = {
+            {0,    Color3.fromRGB(12, 6, 4)},
+            {0.2,  Color3.fromRGB(35, 12, 8)},
+            {0.4,  Color3.fromRGB(55, 20, 10)},
+            {0.5,  Color3.fromRGB(50, 18, 14)},
+            {0.6,  Color3.fromRGB(45, 15, 18)},
+            {0.8,  Color3.fromRGB(28, 8, 12)},
+            {1,    Color3.fromRGB(12, 6, 4)},
+        },
+        Accent       = Color3.fromRGB(245, 150, 50),
+        AccentDark   = Color3.fromRGB(200, 110, 30),
+        AccentLight  = Color3.fromRGB(255, 180, 80),
+        AccentGlow   = Color3.fromRGB(250, 160, 60),
+        AccentSub    = Color3.fromRGB(170, 90, 25),
+        Background   = Color3.fromRGB(12, 6, 4),
+        Surface      = Color3.fromRGB(20, 11, 8),
+        SurfaceLight = Color3.fromRGB(32, 18, 14),
+        SurfaceHover = Color3.fromRGB(44, 26, 20),
+        SurfaceActive= Color3.fromRGB(54, 32, 25),
+        Sidebar      = Color3.fromRGB(15, 8, 6),
+        SidebarActive= Color3.fromRGB(36, 20, 16),
+        Text         = Color3.fromRGB(255, 235, 215),
+        TextDim      = Color3.fromRGB(190, 150, 120),
+        TextMuted    = Color3.fromRGB(100, 72, 55),
+        Border       = Color3.fromRGB(52, 30, 22),
+        BorderLight  = Color3.fromRGB(72, 42, 30),
+        ToggleOff    = Color3.fromRGB(42, 25, 18),
+        SliderBg     = Color3.fromRGB(28, 16, 12),
+        InputBg      = Color3.fromRGB(14, 7, 5),
+    },
+    Ocean = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(120, 200, 255),
+        GradientStops = {
+            {0,    Color3.fromRGB(2, 8, 16)},
+            {0.2,  Color3.fromRGB(4, 18, 35)},
+            {0.4,  Color3.fromRGB(6, 30, 55)},
+            {0.5,  Color3.fromRGB(5, 25, 50)},
+            {0.6,  Color3.fromRGB(4, 20, 45)},
+            {0.8,  Color3.fromRGB(3, 12, 28)},
+            {1,    Color3.fromRGB(2, 8, 16)},
+        },
+        Accent       = Color3.fromRGB(40, 160, 220),
+        AccentDark   = Color3.fromRGB(25, 115, 175),
+        AccentLight  = Color3.fromRGB(70, 190, 245),
+        AccentGlow   = Color3.fromRGB(50, 170, 230),
+        AccentSub    = Color3.fromRGB(20, 95, 150),
+        Background   = Color3.fromRGB(2, 8, 16),
+        Surface      = Color3.fromRGB(4, 14, 26),
+        SurfaceLight = Color3.fromRGB(8, 22, 40),
+        SurfaceHover = Color3.fromRGB(12, 30, 54),
+        SurfaceActive= Color3.fromRGB(16, 38, 66),
+        Sidebar      = Color3.fromRGB(3, 10, 20),
+        SidebarActive= Color3.fromRGB(10, 26, 48),
+        Text         = Color3.fromRGB(210, 235, 255),
+        TextDim      = Color3.fromRGB(110, 158, 200),
+        TextMuted    = Color3.fromRGB(48, 78, 115),
+        Border       = Color3.fromRGB(14, 36, 62),
+        BorderLight  = Color3.fromRGB(22, 52, 88),
+        ToggleOff    = Color3.fromRGB(10, 28, 50),
+        SliderBg     = Color3.fromRGB(6, 18, 36),
+        InputBg      = Color3.fromRGB(3, 9, 18),
+    },
+    Crimson = {
+        Logo         = nil,
+        Accent       = Color3.fromRGB(200, 40, 50),
+        AccentDark   = Color3.fromRGB(155, 25, 35),
+        AccentLight  = Color3.fromRGB(235, 70, 80),
+        AccentGlow   = Color3.fromRGB(215, 50, 60),
+        AccentSub    = Color3.fromRGB(130, 20, 28),
+        Background   = Color3.fromRGB(10, 4, 5),
+        Surface      = Color3.fromRGB(18, 8, 10),
+        SurfaceLight = Color3.fromRGB(28, 14, 17),
+        SurfaceHover = Color3.fromRGB(40, 20, 24),
+        SurfaceActive= Color3.fromRGB(50, 26, 30),
+        Sidebar      = Color3.fromRGB(13, 5, 7),
+        SidebarActive= Color3.fromRGB(34, 16, 20),
+        Text         = Color3.fromRGB(250, 228, 230),
+        TextDim      = Color3.fromRGB(175, 130, 138),
+        TextMuted    = Color3.fromRGB(95, 60, 66),
+        Border       = Color3.fromRGB(48, 20, 25),
+        BorderLight  = Color3.fromRGB(68, 30, 38),
+        ToggleOff    = Color3.fromRGB(40, 18, 22),
+        SliderBg     = Color3.fromRGB(24, 10, 14),
+        InputBg      = Color3.fromRGB(12, 5, 7),
+    },
+    Sakura = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(255, 190, 210),
+        GradientStops = {
+            {0,    Color3.fromRGB(14, 8, 12)},
+            {0.2,  Color3.fromRGB(28, 12, 22)},
+            {0.4,  Color3.fromRGB(42, 16, 32)},
+            {0.5,  Color3.fromRGB(38, 14, 28)},
+            {0.6,  Color3.fromRGB(35, 12, 26)},
+            {0.8,  Color3.fromRGB(22, 10, 18)},
+            {1,    Color3.fromRGB(14, 8, 12)},
+        },
+        Accent       = Color3.fromRGB(235, 120, 160),
+        AccentDark   = Color3.fromRGB(190, 80, 120),
+        AccentLight  = Color3.fromRGB(255, 155, 190),
+        AccentGlow   = Color3.fromRGB(245, 135, 175),
+        AccentSub    = Color3.fromRGB(160, 65, 100),
+        Background   = Color3.fromRGB(14, 8, 12),
+        Surface      = Color3.fromRGB(22, 13, 18),
+        SurfaceLight = Color3.fromRGB(34, 20, 28),
+        SurfaceHover = Color3.fromRGB(46, 28, 38),
+        SurfaceActive= Color3.fromRGB(56, 34, 46),
+        Sidebar      = Color3.fromRGB(16, 9, 13),
+        SidebarActive= Color3.fromRGB(38, 22, 30),
+        Text         = Color3.fromRGB(255, 235, 242),
+        TextDim      = Color3.fromRGB(185, 145, 162),
+        TextMuted    = Color3.fromRGB(100, 70, 82),
+        Border       = Color3.fromRGB(50, 28, 38),
+        BorderLight  = Color3.fromRGB(70, 40, 54),
+        ToggleOff    = Color3.fromRGB(44, 24, 34),
+        SliderBg     = Color3.fromRGB(28, 15, 22),
+        InputBg      = Color3.fromRGB(16, 9, 13),
+    },
 }
 
 -- Apply a named theme or a custom table of color overrides.
@@ -3449,14 +3574,18 @@ function Hyperion:CreateWindow(config)
     function WindowObj:AddThemePicker(section, callback)
         -- section must be a SectionObj returned by Tab:AddSection()
         local cb = callback or function() end
-        local themeOrder = {"Purple", "Midnight", "Rose", "StarryNight", "Aurora", "Nebula"}
+        local themeOrder = {"Purple", "Midnight", "Rose", "Crimson", "Sunset", "Sakura", "StarryNight", "Aurora", "Nebula", "Ocean"}
         local themeColors = {
             Purple      = Color3.fromRGB(140, 80, 220),
             Midnight    = Color3.fromRGB(80, 120, 255),
             Rose        = Color3.fromRGB(220, 80, 120),
+            Crimson     = Color3.fromRGB(200, 40, 50),
+            Sunset      = Color3.fromRGB(245, 150, 50),
+            Sakura      = Color3.fromRGB(235, 120, 160),
             StarryNight = Color3.fromRGB(80, 200, 240),
             Aurora      = Color3.fromRGB(60, 220, 160),
             Nebula      = Color3.fromRGB(255, 100, 180),
+            Ocean       = Color3.fromRGB(40, 160, 220),
         }
 
         -- Find the Elements frame inside the section's frame
@@ -3739,13 +3868,8 @@ function Hyperion:CreateWindow(config)
         local TabPage = Util.Create("ScrollingFrame", {
             Name = "Page_" .. tabName,
             BackgroundTransparency = 1,
-            Size = UDim2.new(1, 0, 1, 0),
+            Size = UDim2.new(1, -4, 1, 0),  -- leave 4px right margin for custom scrollbar
             ScrollBarThickness = 0,
-            ScrollBarImageColor3 = Theme.Accent,
-            ScrollBarImageTransparency = 0.3,
-            
-            
-            
             ScrollingDirection = Enum.ScrollingDirection.Y,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -3754,8 +3878,49 @@ function Hyperion:CreateWindow(config)
             ZIndex = 2,
             Parent = ContentArea
         })
-        Themed(TabPage, { ScrollBarImageColor3 = function(t) return t.Accent end })
         Util.AddPadding(TabPage, 0, 0, 12, 0)
+
+        -- Custom scrollbar thumb (no track line)
+        local ScrollThumb = Util.Create("Frame", {
+            Name = "ScrollThumb",
+            BackgroundColor3 = Theme.Accent,
+            BackgroundTransparency = 0.45,
+            Size = UDim2.new(0, 3, 0, 40),
+            Position = UDim2.new(1, -3, 0, 0),
+            BorderSizePixel = 0,
+            ZIndex = 10,
+            Visible = false,
+            Parent = ContentArea,
+        })
+        Util.AddCorner(ScrollThumb, UDim.new(1, 0))
+        Themed(ScrollThumb, { BackgroundColor3 = function(t) return t.Accent end })
+
+        local function UpdateScrollThumb()
+            if not TabPage.Visible then return end
+            local canvasY = TabPage.AbsoluteCanvasSize.Y
+            local frameH = TabPage.AbsoluteSize.Y
+            if canvasY <= frameH then
+                ScrollThumb.Visible = false
+                return
+            end
+            ScrollThumb.Visible = true
+            local ratio = frameH / canvasY
+            local thumbH = math.max(20, math.floor(frameH * ratio))
+            local scrollPct = TabPage.CanvasPosition.Y / (canvasY - frameH)
+            local trackH = frameH - thumbH
+            ScrollThumb.Size = UDim2.new(0, 3, 0, thumbH)
+            ScrollThumb.Position = UDim2.new(1, -3, 0, math.floor(scrollPct * trackH))
+        end
+
+        TabPage:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateScrollThumb)
+        TabPage:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(UpdateScrollThumb)
+        TabPage:GetPropertyChangedSignal("Visible"):Connect(function()
+            if TabPage.Visible then
+                task.defer(UpdateScrollThumb)
+            else
+                ScrollThumb.Visible = false
+            end
+        end)
 
         local GroupBar = Util.Create("Frame", {
             Name = "GroupBar",
