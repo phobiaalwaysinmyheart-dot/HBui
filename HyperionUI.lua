@@ -263,6 +263,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(140, 255, 200),   -- green-teal aurora shimmer
+        GradientMid  = Color3.fromRGB(5, 42, 38),       -- deep cold teal center
         Accent       = Color3.fromRGB(50, 230, 150),
         AccentDark   = Color3.fromRGB(28, 175, 110),
         AccentLight  = Color3.fromRGB(80, 255, 180),
@@ -347,8 +348,10 @@ end
 ----------------------------------------------------------------
 Hyperion._starConn = nil   -- RunService connection for active star loop
 Hyperion._starFrames = {}  -- live star Frame instances
+Hyperion._starGen = 0      -- generation counter to kill stale cycles
 
 local function _stopStarfield()
+    Hyperion._starGen = Hyperion._starGen + 1
     if Hyperion._starActive then
         Hyperion._starActive()
         Hyperion._starActive = nil
@@ -367,13 +370,18 @@ local function _startStarfield(parent, starColor, meteorParent)
     _stopStarfield()
     local ts = game:GetService("TweenService")
     local active = true
+    local gen = Hyperion._starGen  -- capture generation
     local color = starColor or Color3.fromRGB(200, 220, 255)
     local mParent = meteorParent or parent  -- fallback to same canvas if no separate one
+
+    local function isAlive()
+        return active and gen == Hyperion._starGen and parent and parent.Parent
+    end
 
     -- ── Twinkling ambient stars ──────────────────────────────────
     local AMBIENT = 65
     local function spawnAmbient()
-        if not active or not parent or not parent.Parent then return end
+        if not isAlive() then return end
 
         local hasGlow  = math.random(1, 5) ~= 1  -- 80% have glow rings, 20% bare dot
         local coreSize = math.random(1, 2)
@@ -425,21 +433,21 @@ local function _startStarfield(parent, starColor, meteorParent)
         end
 
         local function cycle()
-            if not active or not parent or not parent.Parent then cleanup(); return end
+            if not isAlive() then cleanup(); return end
             for _, rf in ipairs(ringFrames) do
                 ts:Create(rf.frame, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = rf.peakTr}):Play()
             end
             ts:Create(core, TweenInfo.new(fadeIn * 0.7, Enum.EasingStyle.Sine), {BackgroundTransparency = 0}):Play()
 
             task.delay(fadeIn + hold, function()
-                if not active then cleanup(); return end
+                if not isAlive() then cleanup(); return end
                 for _, rf in ipairs(ringFrames) do
                     ts:Create(rf.frame, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
                 end
                 ts:Create(core, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
 
                 task.delay(fadeOut + pause, function()
-                    if not active then cleanup(); return end
+                    if not isAlive() then cleanup(); return end
                     local nx = math.random(3, 96) / 100
                     local ny = math.random(3, 96) / 100
                     core.Position = UDim2.new(nx, -coreSize/2, ny, -coreSize/2)
@@ -456,7 +464,7 @@ local function _startStarfield(parent, starColor, meteorParent)
 
     for i = 1, AMBIENT do
         task.delay(i * 0.08, function()
-            if active and parent and parent.Parent then spawnAmbient() end
+            if isAlive() then spawnAmbient() end
         end)
     end
 
@@ -464,7 +472,7 @@ local function _startStarfield(parent, starColor, meteorParent)
     local activeMeteors = {}
 
     local function spawnRainingStar()
-        if not active or not mParent or not mParent.Parent then return end
+        if not isAlive() or not mParent or not mParent.Parent then return end
 
         local hasGlow  = math.random(1, 5) ~= 1  -- 80% glow
 
@@ -573,7 +581,7 @@ local function _startStarfield(parent, starColor, meteorParent)
 
     -- Single Heartbeat drives all meteors
     Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
-        if not active then return end
+        if not isAlive() then return end
 
         for i = #activeMeteors, 1, -1 do
             local m = activeMeteors[i]
@@ -614,7 +622,7 @@ local function _startStarfield(parent, starColor, meteorParent)
                 spawnRainingStar()
                 if math.random(1, 3) == 1 then
                     task.delay(math.random(1, 5) / 10, function()
-                        if active and parent and parent.Parent then spawnRainingStar() end
+                        if isAlive() then spawnRainingStar() end
                     end)
                 end
             end
@@ -640,18 +648,30 @@ function Hyperion:SetTheme(nameOrTable)
             local bg  = preset.Background
             -- Use explicit GradientMid if defined, else derive from Accent
             local mid = preset.GradientMid or preset.Accent
-            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
-            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
-            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
+            local cx = math.clamp(bg.R * 0.25 + mid.R * 0.75, 0, 1)
+            local cy = math.clamp(bg.G * 0.25 + mid.G * 0.75, 0, 1)
+            local cz = math.clamp(bg.B * 0.25 + mid.B * 0.75, 0, 1)
+            local ex = math.clamp(bg.R * 0.55 + mid.R * 0.45, 0, 1)
+            local ey = math.clamp(bg.G * 0.55 + mid.G * 0.45, 0, 1)
+            local ez = math.clamp(bg.B * 0.55 + mid.B * 0.45, 0, 1)
             Hyperion._bgGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.25, Color3.new(ex, ey, ez)),
+                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.75, Color3.new(ex, ey, ez)),
                 ColorSequenceKeypoint.new(1,    bg),
             })
         else
             local bg = Hyperion.Theme.Background
             Hyperion._bgGradient.Color = ColorSequence.new(bg, bg)
+        end
+    end
+    -- Start/stop gradient rotation
+    if Hyperion._startGradRot then
+        if preset and preset.Animated then
+            Hyperion._startGradRot()
+        else
+            Hyperion._stopGradRot()
         end
     end
     if preset and preset.Animated and Hyperion._starParent then
@@ -1578,48 +1598,60 @@ function Hyperion:CreateWindow(config)
 
     Hyperion._bgGradient = _bgGradient
 
-    -- Apply gradient + start starfield immediately if an animated theme is already active
+    -- Apply gradient immediately if an animated theme is already active
     do
         local currentPreset = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
         if currentPreset and currentPreset.Animated then
             local bg  = currentPreset.Background
             local mid = currentPreset.GradientMid or currentPreset.Accent
-            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
-            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
-            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
+            local cx = math.clamp(bg.R * 0.25 + mid.R * 0.75, 0, 1)
+            local cy = math.clamp(bg.G * 0.25 + mid.G * 0.75, 0, 1)
+            local cz = math.clamp(bg.B * 0.25 + mid.B * 0.75, 0, 1)
+            local ex = math.clamp(bg.R * 0.55 + mid.R * 0.45, 0, 1)
+            local ey = math.clamp(bg.G * 0.55 + mid.G * 0.45, 0, 1)
+            local ez = math.clamp(bg.B * 0.55 + mid.B * 0.45, 0, 1)
             _bgGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.25, Color3.new(ex, ey, ez)),
+                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.75, Color3.new(ex, ey, ez)),
                 ColorSequenceKeypoint.new(1,    bg),
             })
-            -- start starfield after a brief delay so AbsoluteSize is ready
-            task.delay(0.1, function()
-                _startStarfield(StarCanvas, currentPreset.StarColor, MeteorCanvas)
-            end)
         end
     end
 
-    Hyperion:OnThemeChanged(function()
-        -- Re-apply gradient for this window whenever theme changes
-        local name = Hyperion._currentThemeName
-        local preset = name and Hyperion.Themes[name]
-        if preset and preset.Animated then
-            local bg  = preset.Background
-            local mid = preset.GradientMid or preset.Accent
-            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
-            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
-            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
-            _bgGradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(1,    bg),
-            })
-        else
-            local bg = Hyperion.Theme.Background
-            _bgGradient.Color = ColorSequence.new(bg, bg)
+    -- Slow gradient rotation for animated themes
+    local _gradRotConn = nil
+    local function _startGradientRotation()
+        if _gradRotConn then _gradRotConn:Disconnect() end
+        _gradRotConn = RunService.Heartbeat:Connect(function(dt)
+            if not _bgGradient or not _bgGradient.Parent then return end
+            _bgGradient.Rotation = (_bgGradient.Rotation + dt * 3) % 360
+        end)
+        table.insert(Hyperion.Connections, _gradRotConn)
+    end
+    local function _stopGradientRotation()
+        if _gradRotConn then
+            _gradRotConn:Disconnect()
+            _gradRotConn = nil
         end
+        if _bgGradient and _bgGradient.Parent then
+            _bgGradient.Rotation = 125
+        end
+    end
+
+    -- Start rotation if animated theme already active
+    if Hyperion._currentThemeName then
+        local cp = Hyperion.Themes[Hyperion._currentThemeName]
+        if cp and cp.Animated then _startGradientRotation() end
+    end
+
+    -- Expose to SetTheme override
+    Hyperion._startGradRot = _startGradientRotation
+    Hyperion._stopGradRot  = _stopGradientRotation
+
+    Hyperion:OnThemeChanged(function()
+        -- gradient driven by SetTheme override
     end)
 
     -- Background image layer (sits behind all content, optional)
@@ -1922,16 +1954,98 @@ function Hyperion:CreateWindow(config)
         Parent = Header
     })
     Util.AddCorner(MinBtn, Theme.CornerSmall)
+    Themed(MinBtn, {
+        BackgroundColor3 = function(t) return t.SurfaceLight end,
+        TextColor3 = function(t) return t.TextDim end,
+    })
 
     MinBtn.MouseEnter:Connect(function()
-        Util.TweenFast(MinBtn, {BackgroundTransparency = 0, BackgroundColor3 = Theme.SurfaceHover, TextColor3 = Theme.Text})
+        Util.TweenFast(MinBtn, {BackgroundTransparency = 0, BackgroundColor3 = Hyperion.Theme.SurfaceHover, TextColor3 = Hyperion.Theme.Text})
     end)
     MinBtn.MouseLeave:Connect(function()
-        Util.TweenFast(MinBtn, {BackgroundTransparency = 0.5, BackgroundColor3 = Theme.SurfaceLight, TextColor3 = Theme.TextDim})
+        Util.TweenFast(MinBtn, {BackgroundTransparency = 0.5, BackgroundColor3 = Hyperion.Theme.SurfaceLight, TextColor3 = Hyperion.Theme.TextDim})
     end)
     MinBtn.MouseButton1Click:Connect(function()
         WindowObj:Toggle()
     end)
+
+    -- Fullscreen button (to the left of minimize)
+    local _isFullscreen = false
+    local _preFullscreenSize = nil
+    local _preFullscreenPos  = nil
+
+    local FullscreenBtn = Util.Create("ImageButton", {
+        Name = "FullscreenBtn",
+        BackgroundColor3 = Theme.SurfaceLight,
+        BackgroundTransparency = 0.62,
+        Size = UDim2.new(0, 24, 0, 24),
+        Position = UDim2.new(1, -40, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Image = "rbxassetid://10734896206",  -- lucide-minus used as placeholder; we draw custom
+        ImageTransparency = 1,
+        AutoButtonColor = false,
+        ZIndex = 7,
+        Parent = Header
+    })
+    Util.AddCorner(FullscreenBtn, Theme.CornerSmall)
+    Themed(FullscreenBtn, {
+        BackgroundColor3 = function(t) return t.SurfaceLight end,
+    })
+
+    -- Draw expand/collapse icon inside button using small frames
+    local _fsIconA = Util.Create("Frame", {
+        BackgroundColor3 = Theme.TextDim,
+        Size = UDim2.new(0, 10, 0, 10),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 8,
+        Parent = FullscreenBtn,
+    })
+    local _fsStroke = Util.AddStroke(_fsIconA, Theme.TextDim, 1.5, 0)
+    Util.AddCorner(_fsIconA, UDim.new(0, 2))
+    Themed(_fsStroke, { Color = function(t) return t.TextDim end })
+
+    FullscreenBtn.MouseEnter:Connect(function()
+        Util.TweenFast(FullscreenBtn, {BackgroundTransparency = 0, BackgroundColor3 = Hyperion.Theme.SurfaceHover})
+        Util.TweenFast(_fsStroke, {Color = Hyperion.Theme.Text})
+    end)
+    FullscreenBtn.MouseLeave:Connect(function()
+        Util.TweenFast(FullscreenBtn, {BackgroundTransparency = 0.62, BackgroundColor3 = Hyperion.Theme.SurfaceLight})
+        Util.TweenFast(_fsStroke, {Color = Hyperion.Theme.TextDim})
+    end)
+
+    FullscreenBtn.MouseButton1Click:Connect(function()
+        local viewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
+        if not _isFullscreen then
+            _preFullscreenSize = WindowObj.CurrentSize
+            _preFullscreenPos  = MainFrame.Position
+            _isFullscreen = true
+            local fullW = math.floor(viewportSize.X - 20)
+            local fullH = math.floor(viewportSize.Y - 20)
+            local fullSize = UDim2.new(0, fullW, 0, fullH)
+            WindowObj.CurrentSize = fullSize
+            Util.Tween(MainFrame, 0.3, {
+                Size = fullSize,
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+            }, Enum.EasingStyle.Quint)
+            -- Shrink icon to indicate "restore"
+            Util.TweenFast(_fsIconA, {Size = UDim2.new(0, 7, 0, 7)})
+        else
+            _isFullscreen = false
+            local restoreSize = _preFullscreenSize or windowConfig.Size
+            WindowObj.CurrentSize = restoreSize
+            Util.Tween(MainFrame, 0.3, {
+                Size = restoreSize,
+                Position = _preFullscreenPos or UDim2.new(0.5, 0, 0.5, 0),
+            }, Enum.EasingStyle.Quint)
+            Util.TweenFast(_fsIconA, {Size = UDim2.new(0, 10, 0, 10)})
+        end
+    end)
+
+    -- Shift TopRightInfo to account for fullscreen button
+    TopRightInfo.Position = UDim2.new(1, -74, 0.5, 0)
 
     -- ============================================================
     -- SIDEBAR
@@ -2036,13 +2150,13 @@ function Hyperion:CreateWindow(config)
         btn.MouseEnter:Connect(function()
             Util.TweenFast(btn, {
                 BackgroundTransparency = 0.1,
-                ImageColor3            = Theme.Accent,
+                ImageColor3            = Hyperion.Theme.Accent,
             })
         end)
         btn.MouseLeave:Connect(function()
             Util.TweenFast(btn, {
                 BackgroundTransparency = 0.5,
-                ImageColor3            = Theme.TextMuted,
+                ImageColor3            = Hyperion.Theme.TextMuted,
             })
         end)
         return btn
@@ -2121,12 +2235,12 @@ function Hyperion:CreateWindow(config)
         if searchOpen then
             SearchOverlay.Visible = true
             SearchBox:CaptureFocus()
-            Util.TweenFast(SearchBtn, {ImageColor3 = Theme.Accent, BackgroundTransparency = 0})
+            Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.Accent, BackgroundTransparency = 0})
         else
             SearchOverlay.Visible = false
             SearchBox.Text = ""
             FilterTabs("")
-            Util.TweenFast(SearchBtn, {ImageColor3 = Theme.TextDim, BackgroundTransparency = 0.35})
+            Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
         end
     end)
 
@@ -2148,7 +2262,7 @@ function Hyperion:CreateWindow(config)
             SearchOverlay.Visible = false
             SearchBox.Text = ""
             FilterTabs("")
-            Util.TweenFast(SearchBtn, {ImageColor3 = Theme.TextDim, BackgroundTransparency = 0.35})
+            Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
         end
     end)
 
@@ -2202,10 +2316,10 @@ function Hyperion:CreateWindow(config)
         if infoOpen then
             InfoOverlay.Visible = true
             Util.TweenSmooth(InfoOverlay, {Size = UDim2.new(0, SidebarWidth - 16, 0, 86)})
-            Util.TweenFast(InfoBtn, {ImageColor3 = Theme.Accent, BackgroundTransparency = 0})
+            Util.TweenFast(InfoBtn, {ImageColor3 = Hyperion.Theme.Accent, BackgroundTransparency = 0})
         else
             Util.TweenSmooth(InfoOverlay, {Size = UDim2.new(0, SidebarWidth - 16, 0, 0)})
-            Util.TweenFast(InfoBtn, {ImageColor3 = Theme.TextDim, BackgroundTransparency = 0.35})
+            Util.TweenFast(InfoBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
             task.delay(0.28, function()
                 if not infoOpen then InfoOverlay.Visible = false end
             end)
@@ -2361,10 +2475,10 @@ function Hyperion:CreateWindow(config)
         ImageColor3      = function(t) return t.TextDim end,
     })
     CfgCloseBtn.MouseEnter:Connect(function()
-        Util.TweenFast(CfgCloseBtn, {BackgroundTransparency = 0, ImageColor3 = Theme.Error})
+        Util.TweenFast(CfgCloseBtn, {BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Error})
     end)
     CfgCloseBtn.MouseLeave:Connect(function()
-        Util.TweenFast(CfgCloseBtn, {BackgroundTransparency = 0.4, ImageColor3 = Theme.TextDim})
+        Util.TweenFast(CfgCloseBtn, {BackgroundTransparency = 0.4, ImageColor3 = Hyperion.Theme.TextDim})
     end)
 
     -- ── Name textbox ──────────────────────────────────────────────────────
@@ -2399,10 +2513,10 @@ function Hyperion:CreateWindow(config)
     })
     Themed(_nameStroke, { Color = function(t) return t.Border end })
     CfgNameBox.Focused:Connect(function()
-        Util.TweenFast(CfgNameBox, {BackgroundColor3 = Theme.SurfaceLight})
+        Util.TweenFast(CfgNameBox, {BackgroundColor3 = Hyperion.Theme.SurfaceLight})
     end)
     CfgNameBox.FocusLost:Connect(function()
-        Util.TweenFast(CfgNameBox, {BackgroundColor3 = Theme.InputBg})
+        Util.TweenFast(CfgNameBox, {BackgroundColor3 = Hyperion.Theme.InputBg})
     end)
 
     -- ── Config list ───────────────────────────────────────────────────────
@@ -2527,7 +2641,7 @@ function Hyperion:CreateWindow(config)
             Util.TweenFast(btn, {
                 BackgroundColor3 = hoverBg,
                 BackgroundTransparency = 0,
-                ImageColor3 = danger and Theme.Error or Theme.Accent,
+                ImageColor3 = danger and Hyperion.Theme.Error or Hyperion.Theme.Accent,
             })
             Util.TweenFast(tip, {TextTransparency = 0, BackgroundTransparency = 0.15})
         end)
@@ -2535,12 +2649,12 @@ function Hyperion:CreateWindow(config)
             Util.TweenFast(btn, {
                 BackgroundColor3 = normalBg,
                 BackgroundTransparency = danger and 0 or 0.4,
-                ImageColor3 = danger and Theme.Error or Theme.TextDim,
+                ImageColor3 = danger and Hyperion.Theme.Error or Hyperion.Theme.TextDim,
             })
             Util.TweenFast(tip, {TextTransparency = 1, BackgroundTransparency = 1})
         end)
         btn.MouseButton1Click:Connect(function()
-            Util.TweenFast(btn, {BackgroundColor3 = danger and Theme.Error or Theme.AccentDark})
+            Util.TweenFast(btn, {BackgroundColor3 = danger and Hyperion.Theme.Error or Hyperion.Theme.AccentDark})
             task.delay(0.1, function()
                 Util.TweenFast(btn, {BackgroundColor3 = normalBg})
             end)
@@ -2638,8 +2752,8 @@ function Hyperion:CreateWindow(config)
 
     BtnConfirmDelete.MouseEnter:Connect(function() Util.TweenFast(BtnConfirmDelete, {BackgroundColor3 = Color3.fromRGB(100,28,34)}) end)
     BtnConfirmDelete.MouseLeave:Connect(function() Util.TweenFast(BtnConfirmDelete, {BackgroundColor3 = Color3.fromRGB(70,22,26)}) end)
-    BtnCancelDelete.MouseEnter:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Theme.SurfaceHover}) end)
-    BtnCancelDelete.MouseLeave:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Theme.SurfaceLight}) end)
+    BtnCancelDelete.MouseEnter:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceHover}) end)
+    BtnCancelDelete.MouseLeave:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceLight}) end)
 
     -- ── Bottom spacer so scrollable area has breathing room ───────────────
     Util.Create("Frame", {
@@ -2662,7 +2776,7 @@ function Hyperion:CreateWindow(config)
     -- ── Helpers ───────────────────────────────────────────────────────────
     local function SetStatus(text, color)
         CfgStatusLbl.Text      = text
-        CfgStatusLbl.TextColor3 = color or Theme.TextMuted
+        CfgStatusLbl.TextColor3 = color or Hyperion.Theme.TextMuted
     end
 
     local function ShowDeleteConfirm(name)
@@ -2741,18 +2855,18 @@ function Hyperion:CreateWindow(config)
             })
             Row.MouseEnter:Connect(function()
                 if cfgName ~= selectedCfgName then
-                    Util.TweenFast(Row, {BackgroundTransparency = 0.2, BackgroundColor3 = Theme.SurfaceHover})
+                    Util.TweenFast(Row, {BackgroundTransparency = 0.2, BackgroundColor3 = Hyperion.Theme.SurfaceHover})
                 end
             end)
             Row.MouseLeave:Connect(function()
                 if cfgName ~= selectedCfgName then
-                    Util.TweenFast(Row, {BackgroundTransparency = 0.5, BackgroundColor3 = Theme.SurfaceLight})
+                    Util.TweenFast(Row, {BackgroundTransparency = 0.5, BackgroundColor3 = Hyperion.Theme.SurfaceLight})
                 end
             end)
             Row.MouseButton1Click:Connect(function()
                 selectedCfgName = cfgName
                 CfgNameBox.Text = cfgName
-                SetStatus("Selected: " .. cfgName, Theme.TextDim)
+                SetStatus("Selected: " .. cfgName, Hyperion.Theme.TextDim)
                 RefreshConfigList()
             end)
         end
@@ -2791,9 +2905,9 @@ function Hyperion:CreateWindow(config)
         Util.Tween(CfgSlideClip, 0.30, {Position = UDim2.new(0, 0, 0, 0)}, Enum.EasingStyle.Quint)
 
         Util.TweenFast(FolderOpenBtn, {
-            BackgroundColor3       = Theme.SurfaceActive,
+            BackgroundColor3       = Hyperion.Theme.SurfaceActive,
             BackgroundTransparency = 0,
-            ImageColor3            = Theme.Accent,
+            ImageColor3            = Hyperion.Theme.Accent,
         })
     end
 
@@ -2810,9 +2924,9 @@ function Hyperion:CreateWindow(config)
         Util.Tween(CfgSlideClip, 0.22, {Position = UDim2.new(0, -20, 0, 0)}, Enum.EasingStyle.Quint)
 
         Util.TweenFast(FolderOpenBtn, {
-            BackgroundColor3       = Theme.SurfaceLight,
+            BackgroundColor3       = Hyperion.Theme.SurfaceLight,
             BackgroundTransparency = 0.35,
-            ImageColor3            = Theme.TextDim,
+            ImageColor3            = Hyperion.Theme.TextDim,
         })
         task.delay(0.25, function()
             if not cfgPanelOpen and ConfigOverlay and ConfigOverlay.Parent then
@@ -2862,7 +2976,7 @@ function Hyperion:CreateWindow(config)
         if not insideInfo and not insideBtn then
             infoOpen = false
             Util.TweenSmooth(InfoOverlay, {Size = UDim2.new(0, SidebarWidth - 16, 0, 0)})
-            Util.TweenFast(InfoBtn, {ImageColor3 = Theme.TextDim, BackgroundTransparency = 0.35})
+            Util.TweenFast(InfoBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
             task.delay(0.28, function()
                 if not infoOpen then InfoOverlay.Visible = false end
             end)
@@ -2877,10 +2991,10 @@ function Hyperion:CreateWindow(config)
         if ok then
             selectedCfgName = name
             RefreshConfigList()
-            SetStatus((overwrite and "Overwritten: " or "Saved: ") .. name, Theme.Success)
+            SetStatus((overwrite and "Overwritten: " or "Saved: ") .. name, Hyperion.Theme.Success)
             Hyperion:Notify({Title = "Config", Content = (overwrite and "Overwritten: " or "Saved: ") .. name, Type = "Success", Duration = 3})
         else
-            SetStatus("Save failed", Theme.Error)
+            SetStatus("Save failed", Hyperion.Theme.Error)
         end
     end)
 
@@ -2901,7 +3015,7 @@ function Hyperion:CreateWindow(config)
         local oldName = selectedCfgName
         local newName = CfgNameBox.Text
         if not oldName or newName == "" or oldName == newName then
-            SetStatus(not oldName and "Select a config first" or "Enter a new name", Theme.Warning)
+            SetStatus(not oldName and "Select a config first" or "Enter a new name", Hyperion.Theme.Warning)
             return
         end
         local path = "Hyperion/Configs/" .. oldName .. ".json"
@@ -2930,7 +3044,7 @@ function Hyperion:CreateWindow(config)
 
     BtnRefresh.MouseButton1Click:Connect(function()
         RefreshConfigList()
-        SetStatus("Refreshed", Theme.TextDim)
+        SetStatus("Refreshed", Hyperion.Theme.TextDim)
     end)
 
     BtnDelete.MouseButton1Click:Connect(function()
@@ -3197,6 +3311,12 @@ function Hyperion:CreateWindow(config)
         if WindowObj.Visible then
             ScreenGui.Enabled = true
             MainFrame.Visible = true
+            -- If was fullscreen, restore before showing
+            if _isFullscreen then
+                _isFullscreen = false
+                WindowObj.CurrentSize = _preFullscreenSize or windowConfig.Size
+                Util.TweenFast(_fsIconA, {Size = UDim2.new(0, 10, 0, 10)})
+            end
             MainFrame.Size = UDim2.new(
                 0, math.floor(WindowObj.CurrentSize.X.Offset * 0.97),
                 0, math.floor(WindowObj.CurrentSize.Y.Offset * 0.97)
@@ -3209,7 +3329,7 @@ function Hyperion:CreateWindow(config)
                 Position = UDim2.new(0.5, 0, 0.5, 0)
             }, Enum.EasingStyle.Quint)
             if MobileToggleButton then
-                Util.TweenFast(MobileToggleButton, {BackgroundColor3 = Theme.Surface})
+                Util.TweenFast(MobileToggleButton, {BackgroundColor3 = Hyperion.Theme.Surface})
             end
         else
             Util.Tween(MainFrame, 0.22, {
@@ -3221,7 +3341,7 @@ function Hyperion:CreateWindow(config)
                 Position = UDim2.new(0.5, 0, 0.5, 6)
             }, Enum.EasingStyle.Quint)
             if MobileToggleButton then
-                Util.TweenFast(MobileToggleButton, {BackgroundColor3 = Theme.SidebarActive})
+                Util.TweenFast(MobileToggleButton, {BackgroundColor3 = Hyperion.Theme.SidebarActive})
             end
             task.delay(0.22, function()
                 if not WindowObj.Visible then
@@ -3240,6 +3360,7 @@ function Hyperion:CreateWindow(config)
     function WindowObj:Destroy()
         Hyperion.Unloaded = true
         _stopStarfield()
+        _stopGradientRotation()
         for _, conn in pairs(Hyperion.Connections) do
             pcall(function() conn:Disconnect() end)
         end
@@ -3407,12 +3528,12 @@ function Hyperion:CreateWindow(config)
 
             row.MouseEnter:Connect(function()
                 if currentTheme ~= name then
-                    Util.TweenFast(row, {BackgroundTransparency = 0.2, BackgroundColor3 = Theme.SurfaceHover})
+                    Util.TweenFast(row, {BackgroundTransparency = 0.2, BackgroundColor3 = Hyperion.Theme.SurfaceHover})
                 end
             end)
             row.MouseLeave:Connect(function()
                 if currentTheme ~= name then
-                    Util.TweenFast(row, {BackgroundTransparency = 0.4, BackgroundColor3 = Theme.SurfaceLight})
+                    Util.TweenFast(row, {BackgroundTransparency = 0.4, BackgroundColor3 = Hyperion.Theme.SurfaceLight})
                 end
             end)
 
@@ -3786,12 +3907,12 @@ function Hyperion:CreateWindow(config)
             if GroupButton then
                 GroupButton.MouseEnter:Connect(function()
                     if TabObj.ActiveGroup ~= groupData then
-                        Util.TweenFast(GroupButton, {TextColor3 = Theme.Text, BackgroundTransparency = 0, BackgroundColor3 = Theme.SurfaceHover})
+                        Util.TweenFast(GroupButton, {TextColor3 = Hyperion.Theme.Text, BackgroundTransparency = 0, BackgroundColor3 = Hyperion.Theme.SurfaceHover})
                     end
                 end)
                 GroupButton.MouseLeave:Connect(function()
                     if TabObj.ActiveGroup ~= groupData then
-                        Util.TweenFast(GroupButton, {TextColor3 = Theme.TextDim, BackgroundTransparency = 0.08, BackgroundColor3 = Theme.SurfaceLight})
+                        Util.TweenFast(GroupButton, {TextColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.08, BackgroundColor3 = Hyperion.Theme.SurfaceLight})
                     end
                 end)
             end
@@ -3865,12 +3986,12 @@ function Hyperion:CreateWindow(config)
         -- Hover
         TabButton.MouseEnter:Connect(function()
             if WindowObj.ActiveTab ~= TabObj then
-                Util.TweenFast(TabButton, {BackgroundColor3 = Theme.SurfaceHover})
+                Util.TweenFast(TabButton, {BackgroundColor3 = Hyperion.Theme.SurfaceHover})
             end
         end)
         TabButton.MouseLeave:Connect(function()
             if WindowObj.ActiveTab ~= TabObj then
-                Util.TweenFast(TabButton, {BackgroundColor3 = Theme.Sidebar})
+                Util.TweenFast(TabButton, {BackgroundColor3 = Hyperion.Theme.Sidebar})
             end
         end)
         TabButton.MouseButton1Click:Connect(ActivateTab)
@@ -4385,18 +4506,18 @@ function Hyperion:CreateWindow(config)
                 Themed(BtnLabel, { TextColor3 = function(t) return t.Text end })
 
                 Btn.MouseEnter:Connect(function()
-                    Util.TweenFast(Btn, {BackgroundColor3 = Theme.SurfaceHover})
+                    Util.TweenFast(Btn, {BackgroundColor3 = Hyperion.Theme.SurfaceHover})
                     Util.TweenFast(BtnAccent, {BackgroundTransparency = 0.2})
                 end)
                 Btn.MouseLeave:Connect(function()
-                    Util.TweenFast(Btn, {BackgroundColor3 = Theme.SurfaceLight})
+                    Util.TweenFast(Btn, {BackgroundColor3 = Hyperion.Theme.SurfaceLight})
                     Util.TweenFast(BtnAccent, {BackgroundTransparency = 0.55})
                 end)
                 Btn.MouseButton1Click:Connect(function()
-                    Util.Ripple(Btn, Theme.Accent)
-                    Util.TweenFast(Btn, {BackgroundColor3 = Theme.AccentDark})
+                    Util.Ripple(Btn, Hyperion.Theme.Accent)
+                    Util.TweenFast(Btn, {BackgroundColor3 = Hyperion.Theme.AccentDark})
                     task.delay(0.12, function()
-                        Util.TweenFast(Btn, {BackgroundColor3 = Theme.SurfaceLight})
+                        Util.TweenFast(Btn, {BackgroundColor3 = Hyperion.Theme.SurfaceLight})
                     end)
                     task.spawn(callback)
                 end)
@@ -4587,7 +4708,7 @@ function Hyperion:CreateWindow(config)
                         })
 
                         OptBtn.MouseEnter:Connect(function()
-                            Util.TweenFast(OptBtn, {BackgroundColor3 = Theme.SurfaceHover})
+                            Util.TweenFast(OptBtn, {BackgroundColor3 = Hyperion.Theme.SurfaceHover})
                         end)
                         OptBtn.MouseLeave:Connect(function()
                             local s = false
@@ -4630,12 +4751,12 @@ function Hyperion:CreateWindow(config)
                         local optH = math.min(#values, 6) * 27 + 8
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, optH)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58 + optH + 4)})
-                        Util.TweenFast(dropStroke, {Color = Theme.Accent})
+                        Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Accent})
                         Arrow.Text = "▴"
                     else
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, 0)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
-                        Util.TweenFast(dropStroke, {Color = Theme.Border})
+                        Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Border})
                         Arrow.Text = "▾"
                         task.delay(0.3, function()
                             if not opened then OptsFrame.Visible = false end
@@ -4728,10 +4849,10 @@ function Hyperion:CreateWindow(config)
                 Themed(inputStroke, { Color = function(t) return t.BorderLight end })
 
                 Input.Focused:Connect(function()
-                    Util.TweenFast(inputStroke, {Color = Theme.Accent, Transparency = 0})
+                    Util.TweenFast(inputStroke, {Color = Hyperion.Theme.Accent, Transparency = 0})
                 end)
                 Input.FocusLost:Connect(function(enter)
-                    Util.TweenFast(inputStroke, {Color = Theme.Border, Transparency = 0.4})
+                    Util.TweenFast(inputStroke, {Color = Hyperion.Theme.Border, Transparency = 0.4})
                     value = Input.Text
                     if flag then Hyperion.Flags[flag] = value end
                     task.spawn(callback, value, enter)
@@ -4809,7 +4930,7 @@ function Hyperion:CreateWindow(config)
                 KbBtn.MouseButton1Click:Connect(function()
                     listening = true
                     KbBtn.Text = "..."
-                    Util.TweenFast(kbStroke, {Color = Theme.Accent, Transparency = 0})
+                    Util.TweenFast(kbStroke, {Color = Hyperion.Theme.Accent, Transparency = 0})
                 end)
 
                 Util.Connect(UserInputService.InputBegan, function(input, processed)
