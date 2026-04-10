@@ -235,75 +235,78 @@ Hyperion.Themes = {
     },
     StarryNight = {
         Logo         = nil,
-        Animated     = true,  -- enables starfield animation
-        Accent       = Color3.fromRGB(80, 200, 240),
-        AccentDark   = Color3.fromRGB(50, 155, 195),
-        AccentLight  = Color3.fromRGB(110, 225, 255),
-        AccentGlow   = Color3.fromRGB(90, 210, 250),
-        AccentSub    = Color3.fromRGB(40, 130, 175),
-        Background   = Color3.fromRGB(5, 8, 22),
-        Surface      = Color3.fromRGB(9, 13, 34),
-        SurfaceLight = Color3.fromRGB(14, 20, 50),
-        SurfaceHover = Color3.fromRGB(20, 28, 65),
-        SurfaceActive= Color3.fromRGB(26, 36, 78),
-        Sidebar      = Color3.fromRGB(7, 10, 26),
-        SidebarActive= Color3.fromRGB(18, 26, 55),
-        Text         = Color3.fromRGB(220, 235, 255),
-        TextDim      = Color3.fromRGB(130, 155, 200),
-        TextMuted    = Color3.fromRGB(60, 80, 120),
-        Border       = Color3.fromRGB(25, 38, 75),
-        BorderLight  = Color3.fromRGB(38, 55, 105),
-        ToggleOff    = Color3.fromRGB(22, 33, 65),
-        SliderBg     = Color3.fromRGB(14, 22, 48),
-        InputBg      = Color3.fromRGB(7, 10, 28),
+        Animated     = true,
+        StarColor    = Color3.fromRGB(180, 210, 255),   -- cool white-blue stars
+        Accent       = Color3.fromRGB(100, 160, 255),
+        AccentDark   = Color3.fromRGB(65, 110, 210),
+        AccentLight  = Color3.fromRGB(135, 185, 255),
+        AccentGlow   = Color3.fromRGB(115, 170, 255),
+        AccentSub    = Color3.fromRGB(50, 90, 180),
+        Background   = Color3.fromRGB(4, 7, 20),        -- near-black deep navy
+        Surface      = Color3.fromRGB(8, 12, 32),
+        SurfaceLight = Color3.fromRGB(13, 19, 48),
+        SurfaceHover = Color3.fromRGB(18, 27, 62),
+        SurfaceActive= Color3.fromRGB(24, 35, 76),
+        Sidebar      = Color3.fromRGB(6, 9, 24),
+        SidebarActive= Color3.fromRGB(16, 24, 52),
+        Text         = Color3.fromRGB(215, 228, 255),
+        TextDim      = Color3.fromRGB(120, 148, 205),
+        TextMuted    = Color3.fromRGB(55, 72, 120),
+        Border       = Color3.fromRGB(22, 34, 72),
+        BorderLight  = Color3.fromRGB(34, 50, 100),
+        ToggleOff    = Color3.fromRGB(18, 28, 60),
+        SliderBg     = Color3.fromRGB(11, 18, 44),
+        InputBg      = Color3.fromRGB(5, 8, 24),
     },
     Aurora = {
         Logo         = nil,
         Animated     = true,
-        Accent       = Color3.fromRGB(60, 220, 160),
-        AccentDark   = Color3.fromRGB(35, 170, 120),
-        AccentLight  = Color3.fromRGB(90, 245, 185),
-        AccentGlow   = Color3.fromRGB(70, 230, 170),
-        AccentSub    = Color3.fromRGB(28, 140, 100),
-        Background   = Color3.fromRGB(5, 12, 14),
-        Surface      = Color3.fromRGB(8, 18, 22),
-        SurfaceLight = Color3.fromRGB(13, 28, 34),
-        SurfaceHover = Color3.fromRGB(18, 38, 46),
-        SurfaceActive= Color3.fromRGB(24, 46, 56),
-        Sidebar      = Color3.fromRGB(6, 14, 17),
-        SidebarActive= Color3.fromRGB(16, 32, 40),
-        Text         = Color3.fromRGB(215, 245, 235),
-        TextDim      = Color3.fromRGB(120, 180, 160),
-        TextMuted    = Color3.fromRGB(55, 95, 85),
-        Border       = Color3.fromRGB(22, 55, 50),
-        BorderLight  = Color3.fromRGB(34, 78, 70),
-        ToggleOff    = Color3.fromRGB(18, 46, 42),
-        SliderBg     = Color3.fromRGB(12, 30, 28),
-        InputBg      = Color3.fromRGB(6, 15, 14),
+        StarColor    = Color3.fromRGB(140, 255, 200),   -- green-teal aurora shimmer
+        Accent       = Color3.fromRGB(50, 230, 150),
+        AccentDark   = Color3.fromRGB(28, 175, 110),
+        AccentLight  = Color3.fromRGB(80, 255, 180),
+        AccentGlow   = Color3.fromRGB(60, 240, 165),
+        AccentSub    = Color3.fromRGB(22, 145, 95),
+        Background   = Color3.fromRGB(3, 10, 12),       -- deep cold dark teal-black
+        Surface      = Color3.fromRGB(5, 16, 20),
+        SurfaceLight = Color3.fromRGB(8, 24, 30),
+        SurfaceHover = Color3.fromRGB(12, 34, 42),
+        SurfaceActive= Color3.fromRGB(16, 44, 54),
+        Sidebar      = Color3.fromRGB(4, 12, 15),
+        SidebarActive= Color3.fromRGB(12, 30, 38),
+        Text         = Color3.fromRGB(200, 248, 230),
+        TextDim      = Color3.fromRGB(105, 185, 155),
+        TextMuted    = Color3.fromRGB(45, 95, 78),
+        Border       = Color3.fromRGB(16, 50, 46),
+        BorderLight  = Color3.fromRGB(25, 72, 65),
+        ToggleOff    = Color3.fromRGB(12, 40, 37),
+        SliderBg     = Color3.fromRGB(8, 26, 24),
+        InputBg      = Color3.fromRGB(4, 12, 11),
     },
     Nebula = {
         Logo         = nil,
         Animated     = true,
-        Accent       = Color3.fromRGB(255, 100, 180),
-        AccentDark   = Color3.fromRGB(200, 65, 140),
-        AccentLight  = Color3.fromRGB(255, 135, 205),
-        AccentGlow   = Color3.fromRGB(255, 115, 190),
-        AccentSub    = Color3.fromRGB(165, 50, 115),
-        Background   = Color3.fromRGB(10, 6, 18),
-        Surface      = Color3.fromRGB(16, 10, 28),
-        SurfaceLight = Color3.fromRGB(26, 16, 44),
-        SurfaceHover = Color3.fromRGB(36, 22, 58),
-        SurfaceActive= Color3.fromRGB(44, 28, 70),
-        Sidebar      = Color3.fromRGB(12, 8, 22),
-        SidebarActive= Color3.fromRGB(30, 18, 50),
-        Text         = Color3.fromRGB(248, 225, 240),
-        TextDim      = Color3.fromRGB(175, 135, 165),
-        TextMuted    = Color3.fromRGB(90, 62, 85),
-        Border       = Color3.fromRGB(48, 25, 60),
-        BorderLight  = Color3.fromRGB(68, 38, 85),
-        ToggleOff    = Color3.fromRGB(44, 24, 58),
-        SliderBg     = Color3.fromRGB(28, 15, 40),
-        InputBg      = Color3.fromRGB(12, 7, 20),
+        StarColor    = Color3.fromRGB(255, 160, 220),   -- warm pink-magenta stars
+        Accent       = Color3.fromRGB(210, 80, 255),
+        AccentDark   = Color3.fromRGB(160, 50, 205),
+        AccentLight  = Color3.fromRGB(230, 115, 255),
+        AccentGlow   = Color3.fromRGB(220, 95, 255),
+        AccentSub    = Color3.fromRGB(130, 38, 170),
+        Background   = Color3.fromRGB(8, 4, 16),        -- deep space purple-black
+        Surface      = Color3.fromRGB(13, 7, 25),
+        SurfaceLight = Color3.fromRGB(21, 12, 40),
+        SurfaceHover = Color3.fromRGB(30, 17, 55),
+        SurfaceActive= Color3.fromRGB(38, 22, 68),
+        Sidebar      = Color3.fromRGB(10, 5, 19),
+        SidebarActive= Color3.fromRGB(26, 14, 46),
+        Text         = Color3.fromRGB(245, 218, 255),
+        TextDim      = Color3.fromRGB(168, 120, 195),
+        TextMuted    = Color3.fromRGB(82, 52, 105),
+        Border       = Color3.fromRGB(42, 18, 62),
+        BorderLight  = Color3.fromRGB(60, 28, 88),
+        ToggleOff    = Color3.fromRGB(36, 16, 54),
+        SliderBg     = Color3.fromRGB(22, 10, 36),
+        InputBg      = Color3.fromRGB(9, 4, 17),
     },
 }
 
@@ -358,61 +361,70 @@ local function _stopStarfield()
     Hyperion._starFrames = {}
 end
 
-local function _startStarfield(parent)
+local function _startStarfield(parent, starColor)
     _stopStarfield()
-    local MAX_STARS = 45
+    local MAX_STARS = 40
     local ts = game:GetService("TweenService")
     local active = true
+    local color = starColor or Color3.fromRGB(200, 220, 255)
 
-    -- Each star has a core dot + a larger glow halo behind it.
-    -- Lifecycle: fade in → hold → fade out → destroy → respawn elsewhere.
     local function spawnStar()
         if not active or not parent or not parent.Parent then return end
 
-        local coreSize  = math.random(2, 4)
-        local glowSize  = coreSize * math.random(4, 7)  -- halo is 4-7x the core
-        local px = math.random(2, 97) / 100
-        local py = math.random(2, 97) / 100
-        local fadeIn  = math.random(15, 30) / 10   -- 1.5 – 3s fade in
-        local hold    = math.random(20, 55) / 10   -- 2 – 5.5s stay bright
-        local fadeOut = math.random(20, 40) / 10   -- 2 – 4s fade out
-        local pause   = math.random(10, 40) / 10   -- 1 – 4s dark pause before respawn
+        local coreSize = math.random(2, 4)
+        local px = math.random(3, 96) / 100
+        local py = math.random(3, 96) / 100
+        local fadeIn  = math.random(12, 25) / 10
+        local hold    = math.random(18, 50) / 10
+        local fadeOut = math.random(15, 35) / 10
+        local pause   = math.random(8,  35) / 10
 
-        -- Glow halo (rendered first so it sits behind the core)
-        local glow = Instance.new("Frame")
-        glow.Name = "_HyperionGlow"
-        glow.BackgroundColor3 = Color3.fromRGB(180, 215, 255)
-        glow.BackgroundTransparency = 1  -- start invisible
-        glow.BorderSizePixel = 0
-        glow.Size = UDim2.new(0, glowSize, 0, glowSize)
-        glow.Position = UDim2.new(px, -glowSize/2, py, -glowSize/2)
-        glow.ZIndex = 1
-        glow.Parent = parent
-        local gc = Instance.new("UICorner"); gc.CornerRadius = UDim.new(1,0); gc.Parent = glow
+        -- Build 3 concentric glow rings: outer (most transparent) → mid → core
+        -- This fakes a real soft radial glow falloff since Roblox has no blur
+        local rings = {}
+        local ringDefs = {
+            { mult = 9,  tr = 0.88 },  -- outermost ring, barely visible
+            { mult = 5,  tr = 0.76 },  -- mid ring
+            { mult = 2.5,tr = 0.60 },  -- inner halo
+        }
 
-        -- Core star dot
+        for _, def in ipairs(ringDefs) do
+            local rSize = coreSize * def.mult
+            local ring = Instance.new("Frame")
+            ring.BackgroundColor3 = color
+            ring.BackgroundTransparency = 1
+            ring.BorderSizePixel = 0
+            ring.Size = UDim2.new(0, rSize, 0, rSize)
+            ring.Position = UDim2.new(px, -rSize/2, py, -rSize/2)
+            ring.ZIndex = 1
+            ring.Parent = parent
+            local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1,0); rc.Parent = ring
+            table.insert(rings, { frame = ring, peakTr = def.tr })
+            table.insert(Hyperion._starFrames, ring)
+        end
+
+        -- Core bright dot
         local core = Instance.new("Frame")
-        core.Name = "_HyperionStar"
-        core.BackgroundColor3 = Color3.fromRGB(220, 235, 255)
+        core.BackgroundColor3 = Color3.new(1, 1, 1)  -- pure white core
         core.BackgroundTransparency = 1
         core.BorderSizePixel = 0
         core.Size = UDim2.new(0, coreSize, 0, coreSize)
         core.Position = UDim2.new(px, -coreSize/2, py, -coreSize/2)
-        core.ZIndex = 2
+        core.ZIndex = 3
         core.Parent = parent
         local cc = Instance.new("UICorner"); cc.CornerRadius = UDim.new(1,0); cc.Parent = core
-
-        table.insert(Hyperion._starFrames, glow)
         table.insert(Hyperion._starFrames, core)
 
         local function cleanup()
-            if glow and glow.Parent then glow:Destroy() end
+            for _, r in ipairs(rings) do
+                if r.frame and r.frame.Parent then r.frame:Destroy() end
+            end
             if core and core.Parent then core:Destroy() end
-            -- remove from table
             for i = #Hyperion._starFrames, 1, -1 do
                 local f = Hyperion._starFrames[i]
-                if f == glow or f == core then
-                    table.remove(Hyperion._starFrames, i)
+                if f == core then table.remove(Hyperion._starFrames, i) end
+                for _, r in ipairs(rings) do
+                    if f == r.frame then table.remove(Hyperion._starFrames, i); break end
                 end
             end
         end
@@ -420,41 +432,46 @@ local function _startStarfield(parent)
         local function cycle()
             if not active or not parent or not parent.Parent then cleanup(); return end
 
-            -- Fade IN
-            ts:Create(core, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.05}):Play()
-            ts:Create(glow, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.72}):Play()
+            -- Fade all rings + core IN
+            for _, r in ipairs(rings) do
+                ts:Create(r.frame, TweenInfo.new(fadeIn, Enum.EasingStyle.Sine), {BackgroundTransparency = r.peakTr}):Play()
+            end
+            ts:Create(core, TweenInfo.new(fadeIn * 0.7, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.0}):Play()
 
             task.delay(fadeIn + hold, function()
                 if not active then cleanup(); return end
                 -- Fade OUT
+                for _, r in ipairs(rings) do
+                    ts:Create(r.frame, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
+                end
                 ts:Create(core, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
-                ts:Create(glow, TweenInfo.new(fadeOut, Enum.EasingStyle.Sine), {BackgroundTransparency = 1}):Play()
 
                 task.delay(fadeOut + pause, function()
                     if not active then cleanup(); return end
-                    -- Reposition to a new random spot then cycle again
-                    local nx = math.random(2, 97) / 100
-                    local ny = math.random(2, 97) / 100
+                    -- Move to new spot silently and repeat
+                    local nx = math.random(3, 96) / 100
+                    local ny = math.random(3, 96) / 100
                     core.Position = UDim2.new(nx, -coreSize/2, ny, -coreSize/2)
-                    glow.Position = UDim2.new(nx, -glowSize/2, ny, -glowSize/2)
+                    for _, r in ipairs(rings) do
+                        local rSize = r.frame.Size.X.Offset
+                        r.frame.Position = UDim2.new(nx, -rSize/2, ny, -rSize/2)
+                    end
                     cycle()
                 end)
             end)
         end
 
-        -- Stagger the initial start so not all stars appear at once
-        task.delay(math.random(0, 60) / 10, cycle)
+        task.delay(math.random(0, 70) / 10, cycle)
     end
 
     for i = 1, MAX_STARS do
-        task.delay(i * 0.05, function()
+        task.delay(i * 0.06, function()
             if active and parent and parent.Parent then
                 spawnStar()
             end
         end)
     end
 
-    -- Keep a connection alive so _stopStarfield can kill the `active` flag via disconnect
     Hyperion._starActive = function() active = false end
     Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function() end)
 end
@@ -465,7 +482,7 @@ function Hyperion:SetTheme(nameOrTable)
     _originalSetTheme(self, nameOrTable)
     local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
     if preset and preset.Animated and Hyperion._starParent then
-        _startStarfield(Hyperion._starParent)
+        _startStarfield(Hyperion._starParent, preset.StarColor)
     else
         _stopStarfield()
     end
