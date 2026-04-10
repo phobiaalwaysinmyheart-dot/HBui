@@ -237,7 +237,14 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(180, 210, 255),
-        GradientMid  = Color3.fromRGB(18, 28, 80),   -- deep indigo center
+        -- Multi-stop gradient: deep navy → dark blue → hint of indigo → dark blue → navy
+        GradientStops = {
+            {0,    Color3.fromRGB(4, 7, 20)},
+            {0.3,  Color3.fromRGB(10, 18, 55)},
+            {0.5,  Color3.fromRGB(20, 30, 90)},
+            {0.7,  Color3.fromRGB(10, 18, 55)},
+            {1,    Color3.fromRGB(4, 7, 20)},
+        },
         Accent       = Color3.fromRGB(100, 160, 255),
         AccentDark   = Color3.fromRGB(65, 110, 210),
         AccentLight  = Color3.fromRGB(135, 185, 255),
@@ -262,8 +269,17 @@ Hyperion.Themes = {
     Aurora = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(140, 255, 200),   -- green-teal aurora shimmer
-        GradientMid  = Color3.fromRGB(5, 42, 38),       -- deep cold teal center
+        StarColor    = Color3.fromRGB(140, 255, 200),
+        -- Aurora: dark sky → green curtain → teal → blue-green → dark sky
+        GradientStops = {
+            {0,    Color3.fromRGB(3, 8, 14)},
+            {0.15, Color3.fromRGB(8, 40, 30)},
+            {0.35, Color3.fromRGB(20, 120, 70)},
+            {0.5,  Color3.fromRGB(15, 80, 90)},
+            {0.65, Color3.fromRGB(10, 110, 65)},
+            {0.85, Color3.fromRGB(6, 35, 28)},
+            {1,    Color3.fromRGB(3, 8, 14)},
+        },
         Accent       = Color3.fromRGB(50, 230, 150),
         AccentDark   = Color3.fromRGB(28, 175, 110),
         AccentLight  = Color3.fromRGB(80, 255, 180),
@@ -289,7 +305,16 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(255, 160, 220),
-        GradientMid  = Color3.fromRGB(45, 8, 65),    -- deep magenta-purple center
+        -- Nebula: deep space → magenta cloud → warm pink → purple haze → deep space
+        GradientStops = {
+            {0,    Color3.fromRGB(8, 4, 16)},
+            {0.2,  Color3.fromRGB(45, 10, 55)},
+            {0.35, Color3.fromRGB(90, 20, 80)},
+            {0.5,  Color3.fromRGB(60, 15, 100)},
+            {0.65, Color3.fromRGB(100, 25, 70)},
+            {0.8,  Color3.fromRGB(40, 8, 50)},
+            {1,    Color3.fromRGB(8, 4, 16)},
+        },
         Accent       = Color3.fromRGB(210, 80, 255),
         AccentDark   = Color3.fromRGB(160, 50, 205),
         AccentLight  = Color3.fromRGB(230, 115, 255),
@@ -325,7 +350,7 @@ function Hyperion:SetTheme(nameOrTable)
     -- Store the logo override so windows can read it
     Hyperion._themeLogo = preset.Logo or nil
     for k, v in pairs(preset) do
-        if k ~= "Logo" then
+        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" then
             Hyperion.Theme[k] = v
         end
     end
@@ -617,27 +642,36 @@ function Hyperion:SetTheme(nameOrTable)
     -- Apply gradient directly onto MainFrame's UIGradient
     if Hyperion._bgGradient then
         if preset and preset.Animated then
-            local bg  = preset.Background
-            local mid = preset.GradientMid or preset.Accent
-            -- Mix colors for a visible gradient
-            local cx = math.clamp(bg.R * 0.2 + mid.R * 0.8, 0, 1)
-            local cy = math.clamp(bg.G * 0.2 + mid.G * 0.8, 0, 1)
-            local cz = math.clamp(bg.B * 0.2 + mid.B * 0.8, 0, 1)
-            local ex = math.clamp(bg.R * 0.5 + mid.R * 0.5, 0, 1)
-            local ey = math.clamp(bg.G * 0.5 + mid.G * 0.5, 0, 1)
-            local ez = math.clamp(bg.B * 0.5 + mid.B * 0.5, 0, 1)
             -- UIGradient Color multiplies BackgroundColor3, so set BG to white
             -- and let the gradient provide ALL the color
             if Hyperion._mainFrame then
                 Hyperion._mainFrame.BackgroundColor3 = Color3.new(1, 1, 1)
             end
-            Hyperion._bgGradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.2,  Color3.new(ex, ey, ez)),
-                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(0.8,  Color3.new(ex, ey, ez)),
-                ColorSequenceKeypoint.new(1,    bg),
-            })
+            if preset.GradientStops then
+                -- Use custom multi-stop gradient
+                local stops = {}
+                for _, s in ipairs(preset.GradientStops) do
+                    table.insert(stops, ColorSequenceKeypoint.new(s[1], s[2]))
+                end
+                Hyperion._bgGradient.Color = ColorSequence.new(stops)
+            else
+                -- Fallback: derive from GradientMid or Accent
+                local bg  = preset.Background
+                local mid = preset.GradientMid or preset.Accent
+                local cx = math.clamp(bg.R * 0.2 + mid.R * 0.8, 0, 1)
+                local cy = math.clamp(bg.G * 0.2 + mid.G * 0.8, 0, 1)
+                local cz = math.clamp(bg.B * 0.2 + mid.B * 0.8, 0, 1)
+                local ex = math.clamp(bg.R * 0.5 + mid.R * 0.5, 0, 1)
+                local ey = math.clamp(bg.G * 0.5 + mid.G * 0.5, 0, 1)
+                local ez = math.clamp(bg.B * 0.5 + mid.B * 0.5, 0, 1)
+                Hyperion._bgGradient.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0,    bg),
+                    ColorSequenceKeypoint.new(0.2,  Color3.new(ex, ey, ez)),
+                    ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
+                    ColorSequenceKeypoint.new(0.8,  Color3.new(ex, ey, ez)),
+                    ColorSequenceKeypoint.new(1,    bg),
+                })
+            end
         else
             local bg = Hyperion.Theme.Background
             -- Restore normal background color for non-animated themes
@@ -1591,22 +1625,30 @@ function Hyperion:CreateWindow(config)
     do
         local currentPreset = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
         if currentPreset and currentPreset.Animated then
-            local bg  = currentPreset.Background
-            local mid = currentPreset.GradientMid or currentPreset.Accent
-            local cx = math.clamp(bg.R * 0.2 + mid.R * 0.8, 0, 1)
-            local cy = math.clamp(bg.G * 0.2 + mid.G * 0.8, 0, 1)
-            local cz = math.clamp(bg.B * 0.2 + mid.B * 0.8, 0, 1)
-            local ex = math.clamp(bg.R * 0.5 + mid.R * 0.5, 0, 1)
-            local ey = math.clamp(bg.G * 0.5 + mid.G * 0.5, 0, 1)
-            local ez = math.clamp(bg.B * 0.5 + mid.B * 0.5, 0, 1)
             MainFrame.BackgroundColor3 = Color3.new(1, 1, 1)
-            _bgGradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0,    bg),
-                ColorSequenceKeypoint.new(0.2,  Color3.new(ex, ey, ez)),
-                ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
-                ColorSequenceKeypoint.new(0.8,  Color3.new(ex, ey, ez)),
-                ColorSequenceKeypoint.new(1,    bg),
-            })
+            if currentPreset.GradientStops then
+                local stops = {}
+                for _, s in ipairs(currentPreset.GradientStops) do
+                    table.insert(stops, ColorSequenceKeypoint.new(s[1], s[2]))
+                end
+                _bgGradient.Color = ColorSequence.new(stops)
+            else
+                local bg  = currentPreset.Background
+                local mid = currentPreset.GradientMid or currentPreset.Accent
+                local cx = math.clamp(bg.R * 0.2 + mid.R * 0.8, 0, 1)
+                local cy = math.clamp(bg.G * 0.2 + mid.G * 0.8, 0, 1)
+                local cz = math.clamp(bg.B * 0.2 + mid.B * 0.8, 0, 1)
+                local ex = math.clamp(bg.R * 0.5 + mid.R * 0.5, 0, 1)
+                local ey = math.clamp(bg.G * 0.5 + mid.G * 0.5, 0, 1)
+                local ez = math.clamp(bg.B * 0.5 + mid.B * 0.5, 0, 1)
+                _bgGradient.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0,    bg),
+                    ColorSequenceKeypoint.new(0.2,  Color3.new(ex, ey, ez)),
+                    ColorSequenceKeypoint.new(0.5,  Color3.new(cx, cy, cz)),
+                    ColorSequenceKeypoint.new(0.8,  Color3.new(ex, ey, ez)),
+                    ColorSequenceKeypoint.new(1,    bg),
+                })
+            end
         end
     end
 
@@ -2527,12 +2569,11 @@ function Hyperion:CreateWindow(config)
         Size     = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0, 4, 0, 4),
         BorderSizePixel = 0,
-        ScrollBarThickness = 3,
+        ScrollBarThickness = 4,
         ScrollBarImageColor3 = Theme.Accent,
-        ScrollBarImageTransparency = 0.4,
-        TopImage = "rbxassetid://0",
-        BottomImage = "rbxassetid://0",
-        MidImage = "rbxassetid://0",
+        ScrollBarImageTransparency = 0.3,
+        TopImage = "",
+        BottomImage = "",
         ScrollingDirection = Enum.ScrollingDirection.Y,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(0,0,0,0),
@@ -3139,6 +3180,8 @@ function Hyperion:CreateWindow(config)
     })
     Util.AddCorner(ResizeGrip1, UDim.new(0, 1))
     Util.AddCorner(ResizeGrip2, UDim.new(0, 1))
+    Themed(ResizeGrip1, { BackgroundColor3 = function(t) return t.TextMuted end })
+    Themed(ResizeGrip2, { BackgroundColor3 = function(t) return t.TextMuted end })
 
     local Resizing = false
     local ResizeStart = Vector3.new()
@@ -3696,12 +3739,11 @@ function Hyperion:CreateWindow(config)
             Name = "Page_" .. tabName,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 1, 0),
-            ScrollBarThickness = 3,
+            ScrollBarThickness = 4,
             ScrollBarImageColor3 = Theme.Accent,
-            ScrollBarImageTransparency = 0.4,
-            TopImage = "rbxassetid://0",
-            BottomImage = "rbxassetid://0",
-            MidImage = "rbxassetid://0",
+            ScrollBarImageTransparency = 0.3,
+            TopImage = "",
+            BottomImage = "",
             ScrollingDirection = Enum.ScrollingDirection.Y,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = UDim2.new(0, 0, 0, 0),
