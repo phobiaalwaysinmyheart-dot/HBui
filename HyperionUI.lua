@@ -1578,7 +1578,7 @@ function Hyperion:CreateWindow(config)
 
     Hyperion._bgGradient = _bgGradient
 
-    -- Apply gradient immediately if an animated theme is already active
+    -- Apply gradient + start starfield immediately if an animated theme is already active
     do
         local currentPreset = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
         if currentPreset and currentPreset.Animated then
@@ -1593,11 +1593,33 @@ function Hyperion:CreateWindow(config)
                 ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
                 ColorSequenceKeypoint.new(1,    bg),
             })
+            -- start starfield after a brief delay so AbsoluteSize is ready
+            task.delay(0.1, function()
+                _startStarfield(StarCanvas, currentPreset.StarColor, MeteorCanvas)
+            end)
         end
     end
 
     Hyperion:OnThemeChanged(function()
-        -- gradient driven by SetTheme override
+        -- Re-apply gradient for this window whenever theme changes
+        local name = Hyperion._currentThemeName
+        local preset = name and Hyperion.Themes[name]
+        if preset and preset.Animated then
+            local bg  = preset.Background
+            local mid = preset.GradientMid or preset.Accent
+            local cx = math.clamp(bg.R * 0.3 + mid.R * 0.7, 0, 1)
+            local cy = math.clamp(bg.G * 0.3 + mid.G * 0.7, 0, 1)
+            local cz = math.clamp(bg.B * 0.3 + mid.B * 0.7, 0, 1)
+            _bgGradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,    bg),
+                ColorSequenceKeypoint.new(0.38, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(0.62, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(1,    bg),
+            })
+        else
+            local bg = Hyperion.Theme.Background
+            _bgGradient.Color = ColorSequence.new(bg, bg)
+        end
     end)
 
     -- Background image layer (sits behind all content, optional)
