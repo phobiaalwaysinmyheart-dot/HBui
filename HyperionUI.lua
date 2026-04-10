@@ -361,14 +361,15 @@ local function _stopStarfield()
     Hyperion._starFrames = {}
 end
 
-local function _startStarfield(parent, starColor)
+local function _startStarfield(parent, starColor, meteorParent)
     _stopStarfield()
     local ts = game:GetService("TweenService")
     local active = true
     local color = starColor or Color3.fromRGB(200, 220, 255)
+    local mParent = meteorParent or parent  -- fallback to same canvas if no separate one
 
     -- ── Twinkling ambient stars ──────────────────────────────────
-    local AMBIENT = 35
+    local AMBIENT = 65
     local function spawnAmbient()
         if not active or not parent or not parent.Parent then return end
 
@@ -463,13 +464,12 @@ local function _startStarfield(parent, starColor)
     local activeMeteors = {}
 
     local function spawnRainingStar()
-        if not active or not parent or not parent.Parent then return end
+        if not active or not mParent or not mParent.Parent then return end
 
-        local hasGlow = math.random(1, 5) ~= 1  -- 80% glow, 20% bare
+        local hasGlow = math.random(1, 5) ~= 1
 
-        -- Fixed pixel dimensions of the canvas
-        local W = parent.AbsoluteSize.X
-        local H = parent.AbsoluteSize.Y
+        local W = mParent.AbsoluteSize.X
+        local H = mParent.AbsoluteSize.Y
         if W < 10 then W = 760 end
         if H < 10 then H = 540 end
 
@@ -501,7 +501,7 @@ local function _startStarfield(parent, starColor)
         tail.Position = UDim2.fromOffset(px, py)
         tail.Rotation = tailRot
         tail.ZIndex = 3
-        tail.Parent = parent
+        tail.Parent = mParent
         local tg = Instance.new("UIGradient")
         tg.Transparency = NumberSequence.new({
             NumberSequenceKeypoint.new(0,   1),   -- tip = invisible
@@ -523,7 +523,7 @@ local function _startStarfield(parent, starColor)
             og1.AnchorPoint = Vector2.new(0.5, 0.5)
             og1.Position = UDim2.fromOffset(px, py)
             og1.ZIndex = 2
-            og1.Parent = parent
+            og1.Parent = mParent
             Instance.new("UICorner", og1).CornerRadius = UDim.new(1, 0)
             table.insert(Hyperion._starFrames, og1)
 
@@ -536,7 +536,7 @@ local function _startStarfield(parent, starColor)
             og2.AnchorPoint = Vector2.new(0.5, 0.5)
             og2.Position = UDim2.fromOffset(px, py)
             og2.ZIndex = 3
-            og2.Parent = parent
+            og2.Parent = mParent
             Instance.new("UICorner", og2).CornerRadius = UDim.new(1, 0)
             table.insert(Hyperion._starFrames, og2)
         end
@@ -549,7 +549,7 @@ local function _startStarfield(parent, starColor)
         head.AnchorPoint = Vector2.new(0.5, 0.5)
         head.Position = UDim2.fromOffset(px, py)
         head.ZIndex = 5
-        head.Parent = parent
+        head.Parent = mParent
         Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
         table.insert(Hyperion._starFrames, head)
 
@@ -659,7 +659,7 @@ function Hyperion:SetTheme(nameOrTable)
         end
     end
     if preset and preset.Animated and Hyperion._starParent then
-        _startStarfield(Hyperion._starParent, preset.StarColor)
+        _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent)
     else
         _stopStarfield()
     end
@@ -1558,10 +1558,23 @@ function Hyperion:CreateWindow(config)
         Parent = MainFrame,
     })
     Util.AddCorner(StarCanvas, Theme.CornerLarge)
-    Hyperion._starParent = StarCanvas
+
+    -- Separate high-ZIndex canvas for falling meteors so they appear in front of all UI
+    local MeteorCanvas = Util.Create("Frame", {
+        Name = "MeteorCanvas",
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 50,
+        ClipsDescendants = true,
+        Parent = MainFrame,
+    })
+    Util.AddCorner(MeteorCanvas, Theme.CornerLarge)
+
+    Hyperion._starParent  = StarCanvas
+    Hyperion._meteorParent = MeteorCanvas
 
     -- Gradient applied directly to MainFrame via UIGradient
-    -- (a child Frame at ZIndex 0 doesn't actually go behind the bg color)
     local _bgGradient = Instance.new("UIGradient")
     _bgGradient.Rotation = 125
     _bgGradient.Color = ColorSequence.new(Theme.Background, Theme.Background)
@@ -1569,8 +1582,25 @@ function Hyperion:CreateWindow(config)
 
     Hyperion._bgGradient = _bgGradient
 
+    -- Apply gradient immediately if an animated theme is already active
+    do
+        local currentPreset = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
+        if currentPreset and currentPreset.Animated then
+            local bg  = currentPreset.Background
+            local mid = currentPreset.AccentSub
+            local cx = math.clamp(bg.R * 0.45 + mid.R * 0.55, 0, 1)
+            local cy = math.clamp(bg.G * 0.45 + mid.G * 0.55, 0, 1)
+            local cz = math.clamp(bg.B * 0.45 + mid.B * 0.55, 0, 1)
+            _bgGradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,   bg),
+                ColorSequenceKeypoint.new(0.5, Color3.new(cx, cy, cz)),
+                ColorSequenceKeypoint.new(1,   bg),
+            })
+        end
+    end
+
     Hyperion:OnThemeChanged(function()
-        -- gradient is driven by SetTheme override above; nothing needed here
+        -- gradient driven by SetTheme override
     end)
 
     -- Background image layer (sits behind all content, optional)
@@ -2374,9 +2404,9 @@ function Hyperion:CreateWindow(config)
         Size     = UDim2.new(1, -8, 1, -8),
         Position = UDim2.new(0, 4, 0, 4),
         BorderSizePixel = 0,
-        ScrollBarThickness = 3,
-        ScrollBarImageColor3 = Theme.AccentSub,
-        ScrollBarImageTransparency = 0.5,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = Theme.Accent,
+        ScrollBarImageTransparency = 0.3,
         ScrollingDirection = Enum.ScrollingDirection.Y,
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
         CanvasSize = UDim2.new(0,0,0,0),
@@ -2385,7 +2415,7 @@ function Hyperion:CreateWindow(config)
     })
     Util.AddList(CfgList, Enum.FillDirection.Vertical, 3)
     Util.AddPadding(CfgList, 2)
-    Themed(CfgList, { ScrollBarImageColor3 = function(t) return t.AccentSub end })
+    Themed(CfgList, { ScrollBarImageColor3 = function(t) return t.Accent end })
 
     -- ── Icon action rail ──────────────────────────────────────────────────
     local ICON_IDS = {
@@ -3533,9 +3563,9 @@ function Hyperion:CreateWindow(config)
             Name = "Page_" .. tabName,
             BackgroundTransparency = 1,
             Size = UDim2.new(1, 0, 1, 0),
-            ScrollBarThickness = 2,
-            ScrollBarImageColor3 = Theme.AccentSub,
-            ScrollBarImageTransparency = 0.4,
+            ScrollBarThickness = 4,
+            ScrollBarImageColor3 = Theme.Accent,
+            ScrollBarImageTransparency = 0.3,
             ScrollingDirection = Enum.ScrollingDirection.Y,
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -3544,6 +3574,7 @@ function Hyperion:CreateWindow(config)
             ZIndex = 2,
             Parent = ContentArea
         })
+        Themed(TabPage, { ScrollBarImageColor3 = function(t) return t.Accent end })
         Util.AddPadding(TabPage, 0, 0, 12, 0)
 
         local GroupBar = Util.Create("Frame", {
@@ -4462,9 +4493,9 @@ function Hyperion:CreateWindow(config)
                     Position = UDim2.new(0, 0, 0, 54),
                     ClipsDescendants = true,
                     Visible = false,
-                    ScrollBarThickness = 2,
-                    ScrollBarImageColor3 = Theme.AccentSub,
-                    ScrollBarImageTransparency = 0.5,
+                    ScrollBarThickness = 4,
+                    ScrollBarImageColor3 = Theme.Accent,
+                    ScrollBarImageTransparency = 0.3,
                     ScrollingDirection = Enum.ScrollingDirection.Y,
                     AutomaticCanvasSize = Enum.AutomaticSize.Y,
                     ZIndex = 20,
@@ -4475,7 +4506,7 @@ function Hyperion:CreateWindow(config)
                 Util.AddPadding(OptsFrame, 3, 3, 3, 3)
                 Themed(OptsFrame, {
                     BackgroundColor3 = function(t) return t.Surface end,
-                    ScrollBarImageColor3 = function(t) return t.AccentSub end,
+                    ScrollBarImageColor3 = function(t) return t.Accent end,
                 })
                 Themed(OptsStroke, { Color = function(t) return t.Border end })
 
