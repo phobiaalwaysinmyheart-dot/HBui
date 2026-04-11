@@ -272,7 +272,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(140, 255, 200),
-        ParticleStyle = "wisps",
+        ParticleStyle = "stars",
         -- Aurora: dark sky with subtle green/teal glow, keeps panels readable
         GradientStops = {
             {0,    Color3.fromRGB(3, 8, 12)},
@@ -308,7 +308,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(255, 160, 220),
-        ParticleStyle = "orbs",
+        ParticleStyle = "stars",
         -- Nebula: deep space with subtle magenta/purple haze
         GradientStops = {
             {0,    Color3.fromRGB(8, 4, 16)},
@@ -620,10 +620,15 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         task.delay(math.random(0, 60) / 10, cycle)
     end
 
-    for i = 1, AMBIENT do
-        task.delay(i * 0.08, function()
-            if isAlive() then spawnAmbient() end
-        end)
+    -- Only spawn ambient twinkling stars for space-themed styles
+    local hasAmbientStars = (pStyle == "stars" or pStyle == "wisps" or pStyle == "orbs")
+
+    if hasAmbientStars then
+        for i = 1, AMBIENT do
+            task.delay(i * 0.08, function()
+                if isAlive() then spawnAmbient() end
+            end)
+        end
     end
 
     -- ── Theme-specific particles ─────────────────────────────────
