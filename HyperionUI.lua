@@ -238,6 +238,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(180, 210, 255),
+        ParticleStyle = "stars",
         -- Multi-stop gradient: deep navy → dark blue → hint of indigo → dark blue → navy
         GradientStops = {
             {0,    Color3.fromRGB(4, 7, 20)},
@@ -271,6 +272,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(140, 255, 200),
+        ParticleStyle = "wisps",
         -- Aurora: dark sky with subtle green/teal glow, keeps panels readable
         GradientStops = {
             {0,    Color3.fromRGB(3, 8, 12)},
@@ -306,6 +308,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(255, 160, 220),
+        ParticleStyle = "orbs",
         -- Nebula: deep space with subtle magenta/purple haze
         GradientStops = {
             {0,    Color3.fromRGB(8, 4, 16)},
@@ -341,6 +344,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(255, 200, 120),
+        ParticleStyle = "embers",
         GradientStops = {
             {0,    Color3.fromRGB(12, 6, 4)},
             {0.2,  Color3.fromRGB(35, 12, 8)},
@@ -375,6 +379,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(120, 200, 255),
+        ParticleStyle = "bubbles",
         GradientStops = {
             {0,    Color3.fromRGB(2, 8, 16)},
             {0.2,  Color3.fromRGB(4, 18, 35)},
@@ -432,6 +437,7 @@ Hyperion.Themes = {
         Logo         = nil,
         Animated     = true,
         StarColor    = Color3.fromRGB(255, 190, 210),
+        ParticleStyle = "petals",
         GradientStops = {
             {0,    Color3.fromRGB(14, 8, 12)},
             {0.2,  Color3.fromRGB(28, 12, 22)},
@@ -476,7 +482,7 @@ function Hyperion:SetTheme(nameOrTable)
     -- Store the logo override so windows can read it
     Hyperion._themeLogo = preset.Logo or nil
     for k, v in pairs(preset) do
-        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" then
+        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" and k ~= "ParticleStyle" then
             Hyperion.Theme[k] = v
         end
     end
@@ -517,13 +523,14 @@ local function _stopStarfield()
     Hyperion._starFrames = {}
 end
 
-local function _startStarfield(parent, starColor, meteorParent)
+local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     _stopStarfield()
     local ts = game:GetService("TweenService")
     local active = true
     local gen = Hyperion._starGen  -- capture generation
     local color = starColor or Color3.fromRGB(200, 220, 255)
-    local mParent = meteorParent or parent  -- fallback to same canvas if no separate one
+    local mParent = meteorParent or parent
+    local pStyle = particleStyle or "stars"
 
     local function isAlive()
         return active and gen == Hyperion._starGen and parent and parent.Parent
@@ -619,133 +626,305 @@ local function _startStarfield(parent, starColor, meteorParent)
         end)
     end
 
-    -- ── Falling stars ─────────────────────────────────────────────
-    local activeMeteors = {}
+    -- ── Theme-specific particles ─────────────────────────────────
+    local activeParticles = {}
 
-    local function spawnFallingStar()
-        if not isAlive() or not mParent or not mParent.Parent then return end
-
+    local function getCanvasSize()
         local W = mParent.AbsoluteSize.X
         local H = mParent.AbsoluteSize.Y
-        if W < 10 then W = 760 end
-        if H < 10 then H = 540 end
+        if W < 10 then W = 880 end
+        if H < 10 then H = 600 end
+        return W, H
+    end
 
-        local startX   = math.random(10, math.max(20, W - 10))
-        local speed    = math.random(180, 320)
-        local tailLen  = math.random(35, 70)
-        local headSz   = math.random(2, 3)
+    -- STARS: falling star with tail (StarryNight)
+    local function spawnStar()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local startX = math.random(10, math.max(20, W - 10))
+        local speed = math.random(180, 320)
+        local tailLen = math.random(35, 70)
+        local headSz = math.random(2, 3)
 
-        -- Tail: a single vertical frame with gradient fade
         local tail = Instance.new("Frame")
-        tail.BackgroundColor3 = color
-        tail.BackgroundTransparency = 0
-        tail.BorderSizePixel = 0
+        tail.BackgroundColor3 = color; tail.BorderSizePixel = 0
         tail.Size = UDim2.fromOffset(1, tailLen)
         tail.Position = UDim2.fromOffset(startX, -tailLen - 10)
-        tail.ZIndex = 2
-        tail.Parent = mParent
-        local tg = Instance.new("UIGradient")
+        tail.ZIndex = 2; tail.Parent = mParent
+        local tg = Instance.new("UIGradient"); tg.Parent = tail
         tg.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0,   1),     -- top tip: invisible
-            NumberSequenceKeypoint.new(0.4, 0.7),
-            NumberSequenceKeypoint.new(1,   0.05),  -- bottom: nearly opaque
+            NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.4, 0.7), NumberSequenceKeypoint.new(1, 0.05),
         })
-        tg.Parent = tail
         table.insert(Hyperion._starFrames, tail)
 
-        -- Head glow
-        local glowSz = headSz * 4
+        local gSz = headSz * 4
         local glow = Instance.new("Frame")
-        glow.BackgroundColor3 = color
-        glow.BackgroundTransparency = 0.7
-        glow.BorderSizePixel = 0
-        glow.Size = UDim2.fromOffset(glowSz, glowSz)
-        glow.AnchorPoint = Vector2.new(0.5, 0.5)
-        glow.Position = UDim2.fromOffset(startX, -10)
-        glow.ZIndex = 3
-        glow.Parent = mParent
+        glow.BackgroundColor3 = color; glow.BackgroundTransparency = 0.7; glow.BorderSizePixel = 0
+        glow.Size = UDim2.fromOffset(gSz, gSz); glow.AnchorPoint = Vector2.new(0.5, 0.5)
+        glow.Position = UDim2.fromOffset(startX, -10); glow.ZIndex = 3; glow.Parent = mParent
         Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
         table.insert(Hyperion._starFrames, glow)
 
-        -- Bright white head dot
         local head = Instance.new("Frame")
-        head.BackgroundColor3 = Color3.new(1, 1, 1)
-        head.BackgroundTransparency = 0
-        head.BorderSizePixel = 0
-        head.Size = UDim2.fromOffset(headSz, headSz)
-        head.AnchorPoint = Vector2.new(0.5, 0.5)
-        head.Position = UDim2.fromOffset(startX, -10)
-        head.ZIndex = 5
-        head.Parent = mParent
+        head.BackgroundColor3 = Color3.new(1, 1, 1); head.BorderSizePixel = 0
+        head.Size = UDim2.fromOffset(headSz, headSz); head.AnchorPoint = Vector2.new(0.5, 0.5)
+        head.Position = UDim2.fromOffset(startX, -10); head.ZIndex = 5; head.Parent = mParent
         Instance.new("UICorner", head).CornerRadius = UDim.new(1, 0)
         table.insert(Hyperion._starFrames, head)
 
-        local meteor = {
-            x = startX,
-            y = -tailLen - 10,
-            speed = speed,
-            tailLen = tailLen,
-            tail = tail,
-            glow = glow,
-            glowSz = glowSz,
-            head = head,
-            headSz = headSz,
-            alive = true,
-            maxY = H + tailLen + 20,
-            fadeStart = H * 0.65,
-        }
-        table.insert(activeMeteors, meteor)
+        table.insert(activeParticles, {
+            type = "star", x = startX, y = -tailLen - 10, speed = speed,
+            tailLen = tailLen, tail = tail, glow = glow, head = head,
+            alive = true, maxY = H + tailLen + 20, fadeStart = H * 0.65,
+        })
     end
 
-    -- Single Heartbeat drives all meteors
+    -- PETALS: sakura leaves that sway side to side (Sakura)
+    local function spawnPetal()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(4, 8)
+        local petal = Instance.new("Frame")
+        petal.BackgroundColor3 = color; petal.BackgroundTransparency = math.random(15, 40) / 100
+        petal.BorderSizePixel = 0; petal.Rotation = math.random(0, 360)
+        petal.Size = UDim2.fromOffset(sz, math.floor(sz * 0.6))
+        petal.AnchorPoint = Vector2.new(0.5, 0.5)
+        petal.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        petal.ZIndex = 4; petal.Parent = mParent
+        Instance.new("UICorner", petal).CornerRadius = UDim.new(0, 2)
+        table.insert(Hyperion._starFrames, petal)
+
+        table.insert(activeParticles, {
+            type = "petal", frame = petal, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(30, 70), swayAmp = math.random(20, 50),
+            swaySpeed = math.random(8, 18) / 10, rotSpeed = math.random(20, 60),
+            phase = math.random(0, 628) / 100, time = 0,
+            maxY = H + 20, fadeStart = H * 0.7,
+        })
+    end
+
+    -- BUBBLES: circles floating upward (Ocean)
+    local function spawnBubble()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(3, 8)
+        local bubble = Instance.new("Frame")
+        bubble.BackgroundColor3 = color; bubble.BackgroundTransparency = math.random(50, 75) / 100
+        bubble.BorderSizePixel = 0
+        bubble.Size = UDim2.fromOffset(sz, sz)
+        bubble.AnchorPoint = Vector2.new(0.5, 0.5)
+        bubble.Position = UDim2.fromOffset(math.random(10, W - 10), H + sz)
+        bubble.ZIndex = 4; bubble.Parent = mParent
+        Instance.new("UICorner", bubble).CornerRadius = UDim.new(1, 0)
+        local stroke = Instance.new("UIStroke"); stroke.Color = color
+        stroke.Thickness = 1; stroke.Transparency = 0.5; stroke.Parent = bubble
+        table.insert(Hyperion._starFrames, bubble)
+
+        table.insert(activeParticles, {
+            type = "bubble", frame = bubble, alive = true,
+            x = math.random(10, W - 10), y = H + sz,
+            speed = math.random(25, 60), swayAmp = math.random(8, 20),
+            swaySpeed = math.random(10, 22) / 10, phase = math.random(0, 628) / 100,
+            time = 0, minY = -20,
+        })
+    end
+
+    -- EMBERS: warm dots drifting down slowly (Sunset)
+    local function spawnEmber()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(2, 4)
+        local ember = Instance.new("Frame")
+        ember.BackgroundColor3 = color; ember.BackgroundTransparency = math.random(20, 50) / 100
+        ember.BorderSizePixel = 0
+        ember.Size = UDim2.fromOffset(sz, sz)
+        ember.AnchorPoint = Vector2.new(0.5, 0.5)
+        ember.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        ember.ZIndex = 4; ember.Parent = mParent
+        Instance.new("UICorner", ember).CornerRadius = UDim.new(1, 0)
+        table.insert(Hyperion._starFrames, ember)
+
+        table.insert(activeParticles, {
+            type = "ember", frame = ember, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(20, 50), driftX = math.random(-15, 15),
+            swayAmp = math.random(5, 15), swaySpeed = math.random(8, 16) / 10,
+            phase = math.random(0, 628) / 100, time = 0,
+            maxY = H + 20, fadeStart = H * 0.7,
+        })
+    end
+
+    -- WISPS: slow vertical light streaks (Aurora)
+    local function spawnWisp()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local wispH = math.random(30, 80)
+        local wispW = math.random(2, 4)
+        local wisp = Instance.new("Frame")
+        wisp.BackgroundColor3 = color; wisp.BackgroundTransparency = math.random(55, 80) / 100
+        wisp.BorderSizePixel = 0
+        wisp.Size = UDim2.fromOffset(wispW, wispH)
+        wisp.AnchorPoint = Vector2.new(0.5, 0.5)
+        wisp.Position = UDim2.fromOffset(math.random(10, W - 10), -wispH)
+        wisp.ZIndex = 2; wisp.Parent = mParent
+        local wg = Instance.new("UIGradient"); wg.Parent = wisp
+        wg.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(0.5, 0.3), NumberSequenceKeypoint.new(1, 0.9),
+        })
+        Instance.new("UICorner", wisp).CornerRadius = UDim.new(0, 2)
+        table.insert(Hyperion._starFrames, wisp)
+
+        table.insert(activeParticles, {
+            type = "wisp", frame = wisp, alive = true,
+            x = math.random(10, W - 10), y = -wispH,
+            speed = math.random(15, 40), swayAmp = math.random(3, 10),
+            swaySpeed = math.random(5, 12) / 10, phase = math.random(0, 628) / 100,
+            time = 0, maxY = H + wispH + 20, fadeStart = H * 0.6,
+        })
+    end
+
+    -- ORBS: soft glowing circles that drift slowly (Nebula)
+    local function spawnOrb()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(5, 14)
+        local orb = Instance.new("Frame")
+        orb.BackgroundColor3 = color; orb.BackgroundTransparency = math.random(60, 82) / 100
+        orb.BorderSizePixel = 0
+        orb.Size = UDim2.fromOffset(sz, sz)
+        orb.AnchorPoint = Vector2.new(0.5, 0.5)
+        orb.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        orb.ZIndex = 3; orb.Parent = mParent
+        Instance.new("UICorner", orb).CornerRadius = UDim.new(1, 0)
+        table.insert(Hyperion._starFrames, orb)
+
+        table.insert(activeParticles, {
+            type = "orb", frame = orb, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(12, 35), driftX = math.random(-10, 10),
+            swayAmp = math.random(10, 30), swaySpeed = math.random(4, 10) / 10,
+            phase = math.random(0, 628) / 100, time = 0,
+            maxY = H + sz + 20, fadeStart = H * 0.6,
+        })
+    end
+
+    -- Spawn function map
+    local spawnFn = {
+        stars = spawnStar, petals = spawnPetal, bubbles = spawnBubble,
+        embers = spawnEmber, wisps = spawnWisp, orbs = spawnOrb,
+    }
+    local spawnFunc = spawnFn[pStyle] or spawnStar
+
+    -- Spawn intervals per style
+    local intervalRange = {
+        stars = {14, 28}, petals = {3, 8}, bubbles = {4, 10},
+        embers = {3, 7}, wisps = {10, 22}, orbs = {8, 18},
+    }
+    local iRange = intervalRange[pStyle] or {14, 28}
+
+    -- Single Heartbeat drives all particles
     Hyperion._starConn = game:GetService("RunService").Heartbeat:Connect(function(dt)
         if not isAlive() then return end
 
-        for i = #activeMeteors, 1, -1 do
-            local m = activeMeteors[i]
-            if not m.alive or not m.tail or not m.tail.Parent then
-                table.remove(activeMeteors, i)
-                continue
-            end
+        for i = #activeParticles, 1, -1 do
+            local p = activeParticles[i]
+            if not p.alive then table.remove(activeParticles, i); continue end
 
-            m.y = m.y + m.speed * dt
+            if p.type == "star" then
+                -- Falling star with tail
+                if not p.tail or not p.tail.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.y = p.y + p.speed * dt
+                p.tail.Position = UDim2.fromOffset(p.x, p.y)
+                local headY = p.y + p.tailLen
+                p.head.Position = UDim2.fromOffset(p.x, headY)
+                p.glow.Position = UDim2.fromOffset(p.x, headY)
+                if headY > p.fadeStart then
+                    local t = math.clamp((headY - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.head.BackgroundTransparency = t
+                    p.glow.BackgroundTransparency = 0.7 + t * 0.3
+                    p.tail.BackgroundTransparency = t * 0.8
+                end
+                if headY > p.maxY then
+                    p.alive = false
+                    if p.tail.Parent then p.tail:Destroy() end
+                    if p.glow.Parent then p.glow:Destroy() end
+                    if p.head.Parent then p.head:Destroy() end
+                end
 
-            -- Tail top sits at y, extends down tailLen px
-            m.tail.Position = UDim2.fromOffset(m.x, m.y)
-            -- Head sits at the bottom of the tail
-            local headY = m.y + m.tailLen
-            m.head.Position = UDim2.fromOffset(m.x, headY)
-            m.glow.Position = UDim2.fromOffset(m.x, headY)
+            elseif p.type == "petal" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                p.frame.Rotation = p.frame.Rotation + p.rotSpeed * dt
+                if p.y > p.fadeStart then
+                    local t = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.frame.BackgroundTransparency = math.max(p.frame.BackgroundTransparency, t)
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
 
-            -- Fade out near bottom
-            if headY > m.fadeStart then
-                local t = math.clamp((headY - m.fadeStart) / (m.maxY - m.fadeStart), 0, 1)
-                m.head.BackgroundTransparency = t
-                m.glow.BackgroundTransparency = 0.7 + t * 0.3
-                m.tail.BackgroundTransparency = t * 0.8
-            end
+            elseif p.type == "bubble" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y - p.speed * dt  -- float UP
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                if p.y < p.minY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
 
-            if headY > m.maxY then
-                m.alive = false
-                if m.tail and m.tail.Parent then m.tail:Destroy() end
-                if m.glow and m.glow.Parent then m.glow:Destroy() end
-                if m.head and m.head.Parent then m.head:Destroy() end
-                table.remove(activeMeteors, i)
+            elseif p.type == "ember" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                p.x = p.x + p.driftX * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                if p.y > p.fadeStart then
+                    local t = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.frame.BackgroundTransparency = math.max(p.frame.BackgroundTransparency, t)
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
+
+            elseif p.type == "wisp" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                if p.y > p.fadeStart then
+                    local t = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.frame.BackgroundTransparency = math.min(0.95, 0.55 + t * 0.4)
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
+
+            elseif p.type == "orb" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                p.x = p.x + p.driftX * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                if p.y > p.fadeStart then
+                    local t = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.frame.BackgroundTransparency = math.min(0.95, 0.6 + t * 0.35)
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
             end
         end
 
         -- Spawn timing
         if not Hyperion._rainTimer then Hyperion._rainTimer = 0 end
         Hyperion._rainTimer = Hyperion._rainTimer + dt
-        if not Hyperion._rainInterval then Hyperion._rainInterval = math.random(10, 22) / 10 end
+        if not Hyperion._rainInterval then Hyperion._rainInterval = math.random(iRange[1], iRange[2]) / 10 end
         if Hyperion._rainTimer >= Hyperion._rainInterval then
             Hyperion._rainTimer = 0
-            Hyperion._rainInterval = math.random(14, 28) / 10
+            Hyperion._rainInterval = math.random(iRange[1], iRange[2]) / 10
             if parent and parent.Parent then
-                spawnFallingStar()
+                spawnFunc()
                 if math.random(1, 3) == 1 then
                     task.delay(math.random(1, 5) / 10, function()
-                        if isAlive() then spawnFallingStar() end
+                        if isAlive() then spawnFunc() end
                     end)
                 end
             end
@@ -754,7 +933,7 @@ local function _startStarfield(parent, starColor, meteorParent)
 
     Hyperion._starActive = function()
         active = false
-        activeMeteors = {}
+        activeParticles = {}
         Hyperion._rainTimer = 0
     end
 end
@@ -816,7 +995,7 @@ function Hyperion:SetTheme(nameOrTable)
         end
     end
     if preset and preset.Animated and Hyperion._starParent then
-        _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent)
+        _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent, preset.ParticleStyle)
     else
         _stopStarfield()
     end
