@@ -1,6 +1,6 @@
 # Hyperion UI
 
-A premium UI library for Roblox — modern, clean, and batteries-included. Dark themes, animated backgrounds, live theme swapping, a built-in config system with autoload, notifications, a key system, watermark overlay, and a wide set of elements (toggles, sliders, dropdowns, color pickers, keybinds, textboxes, and more).
+A UI library for Roblox themes, animated backgrounds, live theme swapping, a built-in config system with autoload, notifications, a key system, watermark overlay, and a wide set of elements (toggles, sliders, dropdowns, color pickers, keybinds, textboxes, and more).
 
 ```lua
 local Hyperion = loadstring(game:HttpGet("https://raw.githubusercontent.com/phobiaalwaysinmyheart-dot/HBui/main/HyperionUI.lua"))()
