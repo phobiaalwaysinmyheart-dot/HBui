@@ -511,25 +511,25 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(34, 16, 58),
         InputBg      = Color3.fromRGB(20, 10, 38),
     },
-    CrimsonSunset = {
+    Love = {
         Logo         = nil,
         Animated     = true,
-        -- Hot pink grid lines against red sky — blood-red vaporwave variant
-        StarColor    = Color3.fromRGB(255, 140, 200),
-        ParticleStyle = "gridlines",
-        -- Red/pink sunset gradient:
+        -- Soft pink hearts falling against the deep red sky
+        StarColor    = Color3.fromRGB(255, 140, 185),
+        ParticleStyle = "hearts",
+        -- Romantic red/pink gradient:
         --   top     : deep crimson sky
         --   mid-top : blood red
-        --   middle  : hot pink / coral sun band
-        --   mid-low : magenta horizon
-        --   bottom  : dark wine/burgundy ground
+        --   middle  : hot pink / coral highlight
+        --   mid-low : magenta-wine
+        --   bottom  : dark burgundy ground
         GradientStops = {
-            {0,    Color3.fromRGB(110, 8, 40)},      -- deep crimson sky
+            {0,    Color3.fromRGB(110, 8, 40)},      -- deep crimson
             {0.18, Color3.fromRGB(180, 20, 55)},     -- blood red
-            {0.32, Color3.fromRGB(240, 60, 90)},     -- red sun halo
-            {0.45, Color3.fromRGB(255, 110, 155)},   -- hot pink sun core
+            {0.32, Color3.fromRGB(240, 60, 90)},     -- red highlight
+            {0.45, Color3.fromRGB(255, 110, 155)},   -- hot pink core
             {0.58, Color3.fromRGB(220, 50, 115)},    -- pink band
-            {0.72, Color3.fromRGB(135, 20, 70)},     -- magenta-wine horizon
+            {0.72, Color3.fromRGB(135, 20, 70)},     -- magenta-wine
             {0.88, Color3.fromRGB(55, 8, 30)},       -- dark wine
             {1,    Color3.fromRGB(22, 4, 15)},       -- near-black burgundy
         },
@@ -900,9 +900,38 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         })
     end
 
+    -- HEARTS: pink heart icons that drift down with sway and slow rotation (Love)
+    local function spawnHeart()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(10, 18)
+        local heart = Instance.new("ImageLabel")
+        heart.BackgroundTransparency = 1
+        heart.Image = "rbxassetid://10723406885"   -- lucide-heart
+        heart.ImageColor3 = color
+        heart.ImageTransparency = math.random(20, 45) / 100
+        heart.Size = UDim2.fromOffset(sz, sz)
+        heart.AnchorPoint = Vector2.new(0.5, 0.5)
+        heart.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        heart.Rotation = math.random(-20, 20)
+        heart.ZIndex = 4
+        heart.Parent = mParent
+        table.insert(Hyperion._starFrames, heart)
+
+        table.insert(activeParticles, {
+            type = "heart", frame = heart, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(25, 55),
+            swayAmp = math.random(15, 35), swaySpeed = math.random(6, 12) / 10,
+            rotSpeed = math.random(-30, 30),
+            phase = math.random(0, 628) / 100, time = 0,
+            maxY = H + sz + 20, fadeStart = H * 0.65,
+        })
+    end
+
     -- GRIDLINES: horizontal cyan perspective lines that scroll up from the
     -- bottom and scale wider as they rise — the signature "vaporwave grid
-    -- floor receding into the horizon" effect. (Vaporwave, CrimsonSunset)
+    -- floor receding into the horizon" effect. (Vaporwave)
     local function spawnGridline()
         if not isAlive() then return end
         local W, H = getCanvasSize()
@@ -946,7 +975,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     local spawnFn = {
         stars = spawnStar, petals = spawnPetal, bubbles = spawnBubble,
         embers = spawnEmber, wisps = spawnWisp, orbs = spawnOrb,
-        gridlines = spawnGridline,
+        gridlines = spawnGridline, hearts = spawnHeart,
     }
     local spawnFunc = spawnFn[pStyle] or spawnStar
 
@@ -955,6 +984,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         stars = {14, 28}, petals = {3, 8}, bubbles = {4, 10},
         embers = {3, 7}, wisps = {10, 22}, orbs = {8, 18},
         gridlines = {6, 11},   -- ~1 line every 0.6–1.1s, steady grid feel
+        hearts = {4, 9},        -- ~1 heart every 0.4–0.9s
     }
     local iRange = intervalRange[pStyle] or {14, 28}
 
@@ -1064,6 +1094,21 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
                     p.alive = false
                     if p.frame.Parent then p.frame:Destroy() end
                 end
+
+            elseif p.type == "heart" then
+                -- Falling heart with sway + slow rotation (ImageLabel, so we
+                -- use ImageTransparency, not BackgroundTransparency).
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                p.frame.Rotation = p.frame.Rotation + p.rotSpeed * dt
+                if p.y > p.fadeStart then
+                    local ft = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    p.frame.ImageTransparency = math.max(p.frame.ImageTransparency, ft)
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
             end
         end
 
@@ -3985,6 +4030,25 @@ function Hyperion:CreateWindow(config)
 
     function WindowObj:LoadConfig(name)
         return Config.Load(name or "default", Hyperion.Flags, Hyperion.FlagCallbacks)
+    end
+
+    -- AutoLoad: silently restore a config if it exists on disk.
+    -- Mirrors Hyperion:AutoLoad so scripts can call it on the window instance.
+    function WindowObj:AutoLoad(name)
+        name = name or "default"
+        if Hyperion._configEnabled == false then return false end
+        if isfile and isfile("Hyperion/Configs/" .. name .. ".json") then
+            return Config.Load(name, Hyperion.Flags, Hyperion.FlagCallbacks)
+        end
+        return false
+    end
+
+    -- AutoSave: save the current flag values under `name` (default "default").
+    function WindowObj:AutoSave(name)
+        if Hyperion._configEnabled == false then return false end
+        local ok = Config.Save(name or "default", Hyperion.Flags)
+        RefreshConfigList()
+        return ok
     end
 
     function WindowObj:ListConfigs()
