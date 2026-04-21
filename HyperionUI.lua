@@ -468,6 +468,43 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(28, 15, 22),
         InputBg      = Color3.fromRGB(16, 9, 13),
     },
+    Vaporwave = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(130, 240, 255),  -- cyan stars
+        ParticleStyle = "orbs",
+        -- Vaporwave: hot pink → magenta → deep purple → indigo → cyan-teal
+        -- The classic '80s aesthetic sunset gradient
+        GradientStops = {
+            {0,    Color3.fromRGB(12, 6, 22)},
+            {0.18, Color3.fromRGB(38, 10, 58)},
+            {0.35, Color3.fromRGB(92, 20, 110)},
+            {0.5,  Color3.fromRGB(175, 50, 155)},
+            {0.65, Color3.fromRGB(110, 30, 140)},
+            {0.82, Color3.fromRGB(30, 20, 90)},
+            {1,    Color3.fromRGB(8, 14, 40)},
+        },
+        Accent       = Color3.fromRGB(255, 95, 195),   -- hot pink
+        AccentDark   = Color3.fromRGB(200, 55, 150),
+        AccentLight  = Color3.fromRGB(255, 140, 220),
+        AccentGlow   = Color3.fromRGB(255, 110, 205),
+        AccentSub    = Color3.fromRGB(130, 60, 200),   -- purple sub-accent
+        Background   = Color3.fromRGB(14, 8, 28),      -- deep indigo-black
+        Surface      = Color3.fromRGB(22, 12, 42),
+        SurfaceLight = Color3.fromRGB(34, 20, 60),
+        SurfaceHover = Color3.fromRGB(48, 28, 78),
+        SurfaceActive= Color3.fromRGB(60, 36, 95),
+        Sidebar      = Color3.fromRGB(16, 9, 32),
+        SidebarActive= Color3.fromRGB(40, 22, 68),
+        Text         = Color3.fromRGB(245, 220, 255),
+        TextDim      = Color3.fromRGB(180, 140, 220),
+        TextMuted    = Color3.fromRGB(105, 80, 150),
+        Border       = Color3.fromRGB(80, 40, 125),
+        BorderLight  = Color3.fromRGB(120, 65, 180),
+        ToggleOff    = Color3.fromRGB(44, 22, 68),
+        SliderBg     = Color3.fromRGB(28, 14, 48),
+        InputBg      = Color3.fromRGB(16, 8, 30),
+    },
 }
 
 -- Apply a named theme or a custom table of color overrides.
@@ -1342,9 +1379,11 @@ end
 -- GLOBAL INPUT POOLING (avoids hundreds of InputChanged connections)
 ----------------------------------------------------------------
 
--- AutoLoad: call after all elements are built to restore a config silently
+-- AutoLoad: call after all elements are built to restore a config silently.
+-- Respects the ConfigSystem toggle: if disabled, this is a no-op.
 function Hyperion:AutoLoad(name)
     name = name or "default"
+    if Hyperion._configEnabled == false then return false end
     if isfile("Hyperion/Configs/" .. name .. ".json") then
         Config.Load(name, Hyperion.Flags, Hyperion.FlagCallbacks)
         return true
@@ -1352,10 +1391,67 @@ function Hyperion:AutoLoad(name)
     return false
 end
 
--- AutoSave: saves current flags under the given name (default "default")
+-- AutoSave: saves current flags under the given name (default "default").
+-- Respects the ConfigSystem toggle: if disabled, this is a no-op.
 function Hyperion:AutoSave(name)
+    if Hyperion._configEnabled == false then return false end
     return Config.Save(name or "default", Hyperion.Flags)
 end
+
+-- Manually load a config by name (also respects the ConfigSystem toggle).
+function Hyperion:LoadConfig(name)
+    if Hyperion._configEnabled == false then return false end
+    return Config.Load(name or "default", Hyperion.Flags, Hyperion.FlagCallbacks)
+end
+
+-- Manually save a config by name (also respects the ConfigSystem toggle).
+function Hyperion:SaveConfig(name)
+    if Hyperion._configEnabled == false then return false end
+    return Config.Save(name or "default", Hyperion.Flags)
+end
+
+-- Return the list of saved config names.
+function Hyperion:ListConfigs()
+    return Config.List()
+end
+
+-- Delete a saved config by name.
+function Hyperion:DeleteConfig(name)
+    if not name or name == "" then return false end
+    return Config.Delete(name)
+end
+
+-- Toggle the config system on/off at runtime. When disabled:
+--   • The in-window "Config" (folder) button is hidden.
+--   • Hyperion:SaveConfig / :LoadConfig / :AutoLoad / :AutoSave become no-ops.
+-- All listeners registered via Hyperion:OnConfigEnabledChanged are notified.
+Hyperion._configListeners = Hyperion._configListeners or {}
+
+function Hyperion:SetConfigEnabled(enabled)
+    enabled = enabled and true or false
+    if Hyperion._configEnabled == enabled then return end
+    Hyperion._configEnabled = enabled
+    for _, fn in ipairs(Hyperion._configListeners) do
+        pcall(fn, enabled)
+    end
+end
+
+function Hyperion:EnableConfig()  self:SetConfigEnabled(true)  end
+function Hyperion:DisableConfig() self:SetConfigEnabled(false) end
+
+function Hyperion:IsConfigEnabled()
+    return Hyperion._configEnabled ~= false
+end
+
+function Hyperion:OnConfigEnabledChanged(fn)
+    table.insert(Hyperion._configListeners, fn)
+    return function()
+        for i, v in ipairs(Hyperion._configListeners) do
+            if v == fn then table.remove(Hyperion._configListeners, i); break end
+        end
+    end
+end
+
 local InputPool = {
     SliderCallbacks = {},
     ColorCallbacks  = {},
@@ -1388,7 +1484,20 @@ function Hyperion:CreateWindow(config)
         KeySave  = config.KeySave ~= false, -- save key to file so user only enters once (default true)
         KeyTitle = config.KeyTitle or "Key Required",
         KeySub   = config.KeySub   or "Enter your access key to continue.",
+        -- Config system
+        -- ConfigSystem:  true (default)  -> config panel + button available
+        --                false           -> config button hidden, UI config panel disabled
+        -- ConfigAutoLoad: true (default) -> automatically load the AutoLoadName config after
+        --                                   all tabs/elements are built
+        --                 false          -> do not restore saved flags on startup
+        -- AutoLoadName:  file name to load/save for autoload ("default" if omitted)
+        ConfigSystem   = config.ConfigSystem ~= false,
+        ConfigAutoLoad = config.ConfigAutoLoad ~= false,
+        AutoLoadName   = config.AutoLoadName or config.ConfigName or "default",
     }
+    -- Expose the current ConfigSystem state library-wide so Save/Load/AutoLoad
+    -- can honor it even if called externally.
+    Hyperion._configEnabled = windowConfig.ConfigSystem
 
     -- Apply theme overrides
     for k, v in pairs(windowConfig.Theme) do
@@ -2508,6 +2617,11 @@ function Hyperion:CreateWindow(config)
     local FolderOpenBtn = MakeBottomBtn("rbxassetid://10723387563", "Config") -- lucide-folder
     local InfoBtn   = MakeBottomBtn("rbxassetid://10723415903", "Info")      -- lucide-info
 
+    -- If the config system is disabled, hide the folder button entirely.
+    if not windowConfig.ConfigSystem then
+        FolderOpenBtn.Visible = false
+    end
+
     -- ── Search popup ──────────────────────────────────────────────────────
     local searchOpen = false
     local SearchOverlay = Util.Create("Frame", {
@@ -3281,9 +3395,22 @@ function Hyperion:CreateWindow(config)
     end
 
     FolderOpenBtn.MouseButton1Click:Connect(function()
+        if Hyperion._configEnabled == false then return end
         if cfgPanelOpen then CloseConfigPanel() else OpenConfigPanel() end
     end)
     CfgCloseBtn.MouseButton1Click:Connect(CloseConfigPanel)
+
+    -- Runtime listener: react to Hyperion:EnableConfig / :DisableConfig so the
+    -- folder button appears/disappears live and an open panel closes when
+    -- the system is disabled.
+    Hyperion:OnConfigEnabledChanged(function(enabled)
+        if FolderOpenBtn and FolderOpenBtn.Parent then
+            FolderOpenBtn.Visible = enabled
+        end
+        if not enabled and cfgPanelOpen then
+            CloseConfigPanel()
+        end
+    end)
 
     -- Click anywhere outside config panel to close it
     Util.Connect(UserInputService.InputBegan, function(input, processed)
@@ -6038,6 +6165,22 @@ function Hyperion:CreateWindow(config)
     end -- AddTab
 
     table.insert(Hyperion.Windows, WindowObj)
+
+    -- Schedule config autoload: if enabled, restore saved flags after the
+    -- calling script finishes building tabs/sections/elements. We defer twice
+    -- (RunService.Heartbeat + task.defer) so every element's registered
+    -- FlagCallback exists before Config.Load fires them.
+    if windowConfig.ConfigSystem and windowConfig.ConfigAutoLoad then
+        local loadName = windowConfig.AutoLoadName
+        task.defer(function()
+            task.wait(0.05) -- small delay lets user's build code finish
+            if Hyperion._configEnabled == false then return end
+            if isfile and isfile("Hyperion/Configs/" .. loadName .. ".json") then
+                Config.Load(loadName, Hyperion.Flags, Hyperion.FlagCallbacks)
+            end
+        end)
+    end
+
     return WindowObj
 end -- CreateWindow
 
