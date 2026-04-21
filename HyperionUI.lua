@@ -471,39 +471,88 @@ Hyperion.Themes = {
     Vaporwave = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(130, 240, 255),  -- cyan stars
-        ParticleStyle = "orbs",
-        -- Vaporwave: hot pink → magenta → deep purple → indigo → cyan-teal
-        -- The classic '80s aesthetic sunset gradient
+        -- Cyan gridlines — the iconic vaporwave grid floor color
+        StarColor    = Color3.fromRGB(100, 255, 255),
+        ParticleStyle = "gridlines",
+        -- Reference-accurate vaporwave sunset gradient:
+        --   top     : hot magenta-pink sky
+        --   mid-top : pink → orange sun band
+        --   middle  : warm orange/yellow (sun core)
+        --   mid-low : magenta → deep purple transition (horizon haze)
+        --   bottom  : deep indigo-navy ground (where the cyan grid sits)
         GradientStops = {
-            {0,    Color3.fromRGB(12, 6, 22)},
-            {0.18, Color3.fromRGB(38, 10, 58)},
-            {0.35, Color3.fromRGB(92, 20, 110)},
-            {0.5,  Color3.fromRGB(175, 50, 155)},
-            {0.65, Color3.fromRGB(110, 30, 140)},
-            {0.82, Color3.fromRGB(30, 20, 90)},
-            {1,    Color3.fromRGB(8, 14, 40)},
+            {0,    Color3.fromRGB(255, 40, 185)},   -- hot pink sky
+            {0.18, Color3.fromRGB(255, 80, 200)},
+            {0.32, Color3.fromRGB(255, 140, 120)},  -- pink-orange sun halo
+            {0.42, Color3.fromRGB(255, 200, 60)},   -- yellow sun core
+            {0.52, Color3.fromRGB(255, 95, 140)},   -- orange-pink band
+            {0.62, Color3.fromRGB(200, 50, 180)},   -- magenta horizon
+            {0.78, Color3.fromRGB(70, 30, 120)},    -- deep purple ground
+            {1,    Color3.fromRGB(20, 10, 55)},     -- indigo floor
         },
-        Accent       = Color3.fromRGB(255, 95, 195),   -- hot pink
-        AccentDark   = Color3.fromRGB(200, 55, 150),
-        AccentLight  = Color3.fromRGB(255, 140, 220),
-        AccentGlow   = Color3.fromRGB(255, 110, 205),
-        AccentSub    = Color3.fromRGB(130, 60, 200),   -- purple sub-accent
-        Background   = Color3.fromRGB(14, 8, 28),      -- deep indigo-black
-        Surface      = Color3.fromRGB(22, 12, 42),
-        SurfaceLight = Color3.fromRGB(34, 20, 60),
-        SurfaceHover = Color3.fromRGB(48, 28, 78),
-        SurfaceActive= Color3.fromRGB(60, 36, 95),
-        Sidebar      = Color3.fromRGB(16, 9, 32),
-        SidebarActive= Color3.fromRGB(40, 22, 68),
-        Text         = Color3.fromRGB(245, 220, 255),
-        TextDim      = Color3.fromRGB(180, 140, 220),
-        TextMuted    = Color3.fromRGB(105, 80, 150),
-        Border       = Color3.fromRGB(80, 40, 125),
-        BorderLight  = Color3.fromRGB(120, 65, 180),
-        ToggleOff    = Color3.fromRGB(44, 22, 68),
-        SliderBg     = Color3.fromRGB(28, 14, 48),
-        InputBg      = Color3.fromRGB(16, 8, 30),
+        Accent       = Color3.fromRGB(255, 95, 205),   -- hot pink UI accent
+        AccentDark   = Color3.fromRGB(200, 55, 160),
+        AccentLight  = Color3.fromRGB(255, 150, 225),
+        AccentGlow   = Color3.fromRGB(255, 110, 215),
+        AccentSub    = Color3.fromRGB(100, 230, 240),  -- cyan secondary (grid color)
+        Background   = Color3.fromRGB(18, 10, 36),     -- deep indigo for panels
+        Surface      = Color3.fromRGB(28, 14, 50),
+        SurfaceLight = Color3.fromRGB(42, 22, 70),
+        SurfaceHover = Color3.fromRGB(58, 32, 92),
+        SurfaceActive= Color3.fromRGB(72, 42, 110),
+        Sidebar      = Color3.fromRGB(20, 10, 40),
+        SidebarActive= Color3.fromRGB(48, 26, 80),
+        Text         = Color3.fromRGB(250, 225, 255),
+        TextDim      = Color3.fromRGB(200, 155, 225),
+        TextMuted    = Color3.fromRGB(120, 90, 165),
+        Border       = Color3.fromRGB(95, 45, 145),
+        BorderLight  = Color3.fromRGB(140, 70, 200),
+        ToggleOff    = Color3.fromRGB(52, 26, 80),
+        SliderBg     = Color3.fromRGB(34, 16, 58),
+        InputBg      = Color3.fromRGB(20, 10, 38),
+    },
+    CrimsonSunset = {
+        Logo         = nil,
+        Animated     = true,
+        -- Hot pink grid lines against red sky — blood-red vaporwave variant
+        StarColor    = Color3.fromRGB(255, 140, 200),
+        ParticleStyle = "gridlines",
+        -- Red/pink sunset gradient:
+        --   top     : deep crimson sky
+        --   mid-top : blood red
+        --   middle  : hot pink / coral sun band
+        --   mid-low : magenta horizon
+        --   bottom  : dark wine/burgundy ground
+        GradientStops = {
+            {0,    Color3.fromRGB(110, 8, 40)},      -- deep crimson sky
+            {0.18, Color3.fromRGB(180, 20, 55)},     -- blood red
+            {0.32, Color3.fromRGB(240, 60, 90)},     -- red sun halo
+            {0.45, Color3.fromRGB(255, 110, 155)},   -- hot pink sun core
+            {0.58, Color3.fromRGB(220, 50, 115)},    -- pink band
+            {0.72, Color3.fromRGB(135, 20, 70)},     -- magenta-wine horizon
+            {0.88, Color3.fromRGB(55, 8, 30)},       -- dark wine
+            {1,    Color3.fromRGB(22, 4, 15)},       -- near-black burgundy
+        },
+        Accent       = Color3.fromRGB(255, 70, 115),   -- hot pink-red accent
+        AccentDark   = Color3.fromRGB(205, 35, 75),
+        AccentLight  = Color3.fromRGB(255, 125, 160),
+        AccentGlow   = Color3.fromRGB(255, 90, 135),
+        AccentSub    = Color3.fromRGB(255, 170, 200),  -- soft pink secondary
+        Background   = Color3.fromRGB(22, 6, 14),
+        Surface      = Color3.fromRGB(34, 10, 22),
+        SurfaceLight = Color3.fromRGB(52, 16, 32),
+        SurfaceHover = Color3.fromRGB(70, 22, 44),
+        SurfaceActive= Color3.fromRGB(88, 30, 56),
+        Sidebar      = Color3.fromRGB(26, 7, 16),
+        SidebarActive= Color3.fromRGB(60, 18, 36),
+        Text         = Color3.fromRGB(255, 228, 232),
+        TextDim      = Color3.fromRGB(210, 150, 165),
+        TextMuted    = Color3.fromRGB(120, 72, 85),
+        Border       = Color3.fromRGB(110, 32, 55),
+        BorderLight  = Color3.fromRGB(155, 50, 80),
+        ToggleOff    = Color3.fromRGB(60, 18, 32),
+        SliderBg     = Color3.fromRGB(38, 12, 24),
+        InputBg      = Color3.fromRGB(22, 6, 14),
     },
 }
 
@@ -851,10 +900,53 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         })
     end
 
+    -- GRIDLINES: horizontal cyan perspective lines that scroll up from the
+    -- bottom and scale wider as they rise — the signature "vaporwave grid
+    -- floor receding into the horizon" effect. (Vaporwave, CrimsonSunset)
+    local function spawnGridline()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        -- Lines start near bottom (the "near" edge of the floor) and move UP.
+        -- As they move up, they shrink in width and fade — giving the
+        -- illusion of perspective receding toward a vanishing point.
+        local startY = H - 4
+        local endY   = H * 0.55  -- horizon line: top of the "floor"
+        local line = Instance.new("Frame")
+        line.BackgroundColor3 = color
+        line.BackgroundTransparency = 0.25
+        line.BorderSizePixel = 0
+        -- Start wide, spanning most of the screen
+        line.Size = UDim2.fromOffset(W + 40, 2)
+        line.AnchorPoint = Vector2.new(0.5, 0.5)
+        line.Position = UDim2.fromOffset(W * 0.5, startY)
+        line.ZIndex = 2
+        line.Parent = mParent
+        -- Horizontal gradient so the line is brightest in the center and
+        -- fades at the edges (looks more like a real light grid).
+        local grad = Instance.new("UIGradient")
+        grad.Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0,    0.85),
+            NumberSequenceKeypoint.new(0.18, 0.15),
+            NumberSequenceKeypoint.new(0.5,  0),
+            NumberSequenceKeypoint.new(0.82, 0.15),
+            NumberSequenceKeypoint.new(1,    0.85),
+        })
+        grad.Parent = line
+        table.insert(Hyperion._starFrames, line)
+
+        table.insert(activeParticles, {
+            type = "gridline", frame = line, alive = true,
+            y = startY, endY = endY, startY = startY,
+            speed = math.random(38, 62),  -- px/sec upward
+            startW = W + 40,
+        })
+    end
+
     -- Spawn function map
     local spawnFn = {
         stars = spawnStar, petals = spawnPetal, bubbles = spawnBubble,
         embers = spawnEmber, wisps = spawnWisp, orbs = spawnOrb,
+        gridlines = spawnGridline,
     }
     local spawnFunc = spawnFn[pStyle] or spawnStar
 
@@ -862,6 +954,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     local intervalRange = {
         stars = {14, 28}, petals = {3, 8}, bubbles = {4, 10},
         embers = {3, 7}, wisps = {10, 22}, orbs = {8, 18},
+        gridlines = {6, 11},   -- ~1 line every 0.6–1.1s, steady grid feel
     }
     local iRange = intervalRange[pStyle] or {14, 28}
 
@@ -952,6 +1045,25 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
                     p.frame.BackgroundTransparency = math.min(0.95, 0.6 + t * 0.35)
                 end
                 if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
+
+            elseif p.type == "gridline" then
+                -- Travel upward. Compute progress 0..1 from startY to endY,
+                -- then shrink width + increase transparency so the line looks
+                -- like it's receding into a vanishing point on the horizon.
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.y = p.y - p.speed * dt
+                local W = mParent.AbsoluteSize.X
+                if W < 10 then W = 880 end
+                local t = math.clamp((p.startY - p.y) / math.max(1, p.startY - p.endY), 0, 1)
+                -- At t=0 the line is at full width; at t=1 it's a pinprick at center
+                local curW = math.max(2, (p.startW) * (1 - t * 0.92))
+                p.frame.Size = UDim2.fromOffset(curW, 2)
+                p.frame.Position = UDim2.fromOffset(W * 0.5, p.y)
+                p.frame.BackgroundTransparency = math.min(0.95, 0.25 + t * 0.7)
+                if p.y <= p.endY then
+                    p.alive = false
+                    if p.frame.Parent then p.frame:Destroy() end
+                end
             end
         end
 
