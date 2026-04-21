@@ -15,7 +15,7 @@
 -- ENVIRONMENT COMPATIBILITY
 ----------------------------------------------------------------
 cloneref = cloneref or function(i) return i end
-clonefunction = clonefunction or function(...) return ... end
+clonefunction = clonefunction or function(f) return f end
 getgenv = getgenv or getfenv
 protect_gui = protect_gui or (syn and syn.protect_gui) or function() end
 isfile = isfile or function() return false end
@@ -24,6 +24,19 @@ writefile = writefile or function() end
 makefolder = makefolder or function() end
 isfolder = isfolder or function() return false end
 listfiles = listfiles or function() return {} end
+
+-- Capture pristine copies of the filesystem functions at library load time.
+-- If a consuming script later installs a buggy hook on `writefile` (e.g. an
+-- anti-tamper hook that infinite-recurses), our saves still work because
+-- we call these captured clones directly instead of going through the hook.
+-- clonefunction is no-op on executors that lack it, but that's fine — in
+-- that environment nobody can hook writefile either.
+local _rawWritefile  = clonefunction(writefile)
+local _rawReadfile   = clonefunction(readfile)
+local _rawIsfile     = clonefunction(isfile)
+local _rawIsfolder   = clonefunction(isfolder)
+local _rawMakefolder = clonefunction(makefolder)
+local _rawListfiles  = clonefunction(listfiles)
 
 ----------------------------------------------------------------
 -- SERVICES
@@ -1445,8 +1458,8 @@ end
 local Config = {}
 
 function Config.EnsureFolder()
-    if not isfolder("Hyperion") then pcall(makefolder, "Hyperion") end
-    if not isfolder("Hyperion/Configs") then pcall(makefolder, "Hyperion/Configs") end
+    if not _rawIsfolder("Hyperion") then pcall(_rawMakefolder, "Hyperion") end
+    if not _rawIsfolder("Hyperion/Configs") then pcall(_rawMakefolder, "Hyperion/Configs") end
 end
 
 function Config.Save(name, flags)
@@ -1471,16 +1484,19 @@ function Config.Save(name, flags)
     local path = "Hyperion/Configs/" .. name .. ".json"
     -- Retry folder creation immediately before write, in case an earlier
     -- makefolder silently failed or the folder was removed.
-    if isfolder and not isfolder("Hyperion") then pcall(makefolder, "Hyperion") end
-    if isfolder and not isfolder("Hyperion/Configs") then pcall(makefolder, "Hyperion/Configs") end
-    local okWrite, writeErr = pcall(writefile, path, encoded)
+    if not _rawIsfolder("Hyperion") then pcall(_rawMakefolder, "Hyperion") end
+    if not _rawIsfolder("Hyperion/Configs") then pcall(_rawMakefolder, "Hyperion/Configs") end
+    -- Use the raw (pre-hook) writefile clone. This means even if the
+    -- consuming script has installed a broken writefile hook, our save
+    -- bypasses it and writes directly.
+    local okWrite, writeErr = pcall(_rawWritefile, path, encoded)
     if not okWrite then
         return false, "write failed: " .. tostring(writeErr)
     end
     -- Verify the file actually landed on disk. Some executors silently no-op
     -- writefile when the target path contains characters they don't handle,
     -- or when workspace resolution fails.
-    if isfile and not isfile(path) then
+    if not _rawIsfile(path) then
         return false, "file not present after write"
     end
     return true
@@ -1489,8 +1505,8 @@ end
 function Config.Load(name, flags, callbacks)
     Config.EnsureFolder()
     local path = "Hyperion/Configs/" .. name .. ".json"
-    if not isfile(path) then return false end
-    local ok, raw = pcall(readfile, path)
+    if not _rawIsfile(path) then return false end
+    local ok, raw = pcall(_rawReadfile, path)
     if not ok then return false end
     local ok2, data = pcall(HttpService.JSONDecode, HttpService, raw)
     if not ok2 or type(data) ~= "table" then return false end
@@ -1523,7 +1539,7 @@ end
 function Config.List()
     Config.EnsureFolder()
     local out = {}
-    local ok, files = pcall(listfiles, "Hyperion/Configs")
+    local ok, files = pcall(_rawListfiles, "Hyperion/Configs")
     if ok then
         for _, f in ipairs(files) do
             local n = string.match(f, "([^/\\]+)%.json$")
@@ -1536,7 +1552,7 @@ end
 function Config.Delete(name)
     Config.EnsureFolder()
     local path = "Hyperion/Configs/" .. name .. ".json"
-    if not isfile(path) then return false end
+    if not _rawIsfile(path) then return false end
     local removeFn = (typeof(delfile) == "function" and delfile)
         or (typeof(fremovefile) == "function" and fremovefile)
         or nil
@@ -1555,7 +1571,7 @@ end
 function Hyperion:AutoLoad(name)
     name = name or "default"
     if Hyperion._configEnabled == false then return false end
-    if isfile("Hyperion/Configs/" .. name .. ".json") then
+    if _rawIsfile("Hyperion/Configs/" .. name .. ".json") then
         Config.Load(name, Hyperion.Flags, Hyperion.FlagCallbacks)
         return true
     end
@@ -3635,7 +3651,7 @@ function Hyperion:CreateWindow(config)
             Hyperion:Notify({Title="Config", Content="Name contains invalid characters.", Type="Error", Duration=3})
             return
         end
-        local overwrite = isfile("Hyperion/Configs/" .. name .. ".json")
+        local overwrite = _rawIsfile("Hyperion/Configs/" .. name .. ".json")
         local ok, err = Config.Save(name, Hyperion.Flags)
         if ok then
             selectedCfgName = name
@@ -3669,10 +3685,10 @@ function Hyperion:CreateWindow(config)
             return
         end
         local path = "Hyperion/Configs/" .. oldName .. ".json"
-        if not isfile(path) then SetStatus("Config not found", Theme.Error); return end
-        local ok, raw = pcall(readfile, path)
+        if not _rawIsfile(path) then SetStatus("Config not found", Theme.Error); return end
+        local ok, raw = pcall(_rawReadfile, path)
         if ok then
-            pcall(writefile, "Hyperion/Configs/" .. newName .. ".json", raw)
+            pcall(_rawWritefile, "Hyperion/Configs/" .. newName .. ".json", raw)
             Config.Delete(oldName)
             selectedCfgName = newName
             RefreshConfigList()
@@ -3685,7 +3701,7 @@ function Hyperion:CreateWindow(config)
 
     BtnNew.MouseButton1Click:Connect(function()
         local base, name, i = "new_config", "new_config", 1
-        while isfile("Hyperion/Configs/" .. name .. ".json") do
+        while _rawIsfile("Hyperion/Configs/" .. name .. ".json") do
             name = base .. "_" .. i; i = i + 1
         end
         CfgNameBox.Text = name
@@ -4037,7 +4053,7 @@ function Hyperion:CreateWindow(config)
     function WindowObj:AutoLoad(name)
         name = name or "default"
         if Hyperion._configEnabled == false then return false end
-        if isfile and isfile("Hyperion/Configs/" .. name .. ".json") then
+        if _rawIsfile("Hyperion/Configs/" .. name .. ".json") then
             return Config.Load(name, Hyperion.Flags, Hyperion.FlagCallbacks)
         end
         return false
@@ -6372,7 +6388,7 @@ function Hyperion:CreateWindow(config)
         task.defer(function()
             task.wait(0.05) -- small delay lets user's build code finish
             if Hyperion._configEnabled == false then return end
-            if isfile and isfile("Hyperion/Configs/" .. loadName .. ".json") then
+            if _rawIsfile("Hyperion/Configs/" .. loadName .. ".json") then
                 Config.Load(loadName, Hyperion.Flags, Hyperion.FlagCallbacks)
             end
         end)
