@@ -1307,12 +1307,26 @@ function Config.Save(name, flags)
             data[flag] = {_t = type(value), V = value}
         end
     end
-    local ok, encoded = pcall(HttpService.JSONEncode, HttpService, data)
-    if ok then
-        pcall(writefile, "Hyperion/Configs/" .. name .. ".json", encoded)
-        return true
+    local okEnc, encoded = pcall(HttpService.JSONEncode, HttpService, data)
+    if not okEnc then
+        return false, "encode failed: " .. tostring(encoded)
     end
-    return false
+    local path = "Hyperion/Configs/" .. name .. ".json"
+    -- Retry folder creation immediately before write, in case an earlier
+    -- makefolder silently failed or the folder was removed.
+    if isfolder and not isfolder("Hyperion") then pcall(makefolder, "Hyperion") end
+    if isfolder and not isfolder("Hyperion/Configs") then pcall(makefolder, "Hyperion/Configs") end
+    local okWrite, writeErr = pcall(writefile, path, encoded)
+    if not okWrite then
+        return false, "write failed: " .. tostring(writeErr)
+    end
+    -- Verify the file actually landed on disk. Some executors silently no-op
+    -- writefile when the target path contains characters they don't handle,
+    -- or when workspace resolution fails.
+    if isfile and not isfile(path) then
+        return false, "file not present after write"
+    end
+    return true
 end
 
 function Config.Load(name, flags, callbacks)
@@ -3458,8 +3472,14 @@ function Hyperion:CreateWindow(config)
     -- ── Button logic ──────────────────────────────────────────────────────
     BtnSave.MouseButton1Click:Connect(function()
         local name = (CfgNameBox.Text ~= "" and CfgNameBox.Text) or "default"
+        -- Reject names with characters that break filesystems on any executor
+        if name:find("[<>:\"/\\|%?%*]") or name:match("^%s*$") then
+            SetStatus("Invalid name", Hyperion.Theme.Error)
+            Hyperion:Notify({Title="Config", Content="Name contains invalid characters.", Type="Error", Duration=3})
+            return
+        end
         local overwrite = isfile("Hyperion/Configs/" .. name .. ".json")
-        local ok = Config.Save(name, Hyperion.Flags)
+        local ok, err = Config.Save(name, Hyperion.Flags)
         if ok then
             selectedCfgName = name
             RefreshConfigList()
@@ -3467,6 +3487,7 @@ function Hyperion:CreateWindow(config)
             Hyperion:Notify({Title = "Config", Content = (overwrite and "Overwritten: " or "Saved: ") .. name, Type = "Success", Duration = 3})
         else
             SetStatus("Save failed", Hyperion.Theme.Error)
+            Hyperion:Notify({Title="Config", Content="Save failed: " .. tostring(err or "unknown error"), Type="Error", Duration=5})
         end
     end)
 
