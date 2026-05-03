@@ -3401,85 +3401,119 @@ function Hyperion:CreateWindow(config)
     BtnCancelDelete.MouseEnter:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceHover}) end)
     BtnCancelDelete.MouseLeave:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceLight}) end)
 
-    -- ── Auto-load toggle row ─────────────────────────────────────────────
-    local AutoLoadRow = Util.Create("Frame", {
-        Name             = "AutoLoadRow",
-        BackgroundColor3 = Theme.Surface,
-        BackgroundTransparency = 0.3,
-        Size             = UDim2.new(1, -24, 0, 28),
-        ZIndex           = 32,
-        Parent           = CfgScroll,
-    })
-    Util.AddCorner(AutoLoadRow, Theme.CornerSmall)
-    local _alStroke = Util.AddStroke(AutoLoadRow, Theme.Border, 1, 0.4)
-    Themed(AutoLoadRow, { BackgroundColor3 = function(t) return t.Surface end })
-    Themed(_alStroke, { Color = function(t) return t.Border end })
-
+    -- ── Auto-load button ──────────────────────────────────────────────────
     local function _readAutoLoadFile()
         local ok, v = pcall(_rawReadfile, "Hyperion/autoload.dat")
         return (ok and v and v ~= "") and v or nil
     end
 
+    local AL_ICON_STAR  = "rbxassetid://10734966248" -- lucide-star
+    local AL_ICON_CHECK = "rbxassetid://10709790644" -- lucide-check
+
+    local AutoLoadBtn = Util.Create("Frame", {
+        Name                   = "AutoLoadBtn",
+        BackgroundColor3       = Theme.Surface,
+        BackgroundTransparency = 0.3,
+        Size                   = UDim2.new(1, -24, 0, 30),
+        ZIndex                 = 32,
+        Parent                 = CfgScroll,
+    })
+    Util.AddCorner(AutoLoadBtn, Theme.CornerSmall)
+    local _alStroke = Util.AddStroke(AutoLoadBtn, Theme.Border, 1, 0.4)
+    Themed(AutoLoadBtn, { BackgroundColor3 = function(t) return t.Surface end })
+    Themed(_alStroke,   { Color = function(t) return t.Border end })
+
+    local ALIcon = Util.Create("ImageLabel", {
+        BackgroundTransparency = 1,
+        Size        = UDim2.new(0, 12, 0, 12),
+        Position    = UDim2.new(0, 10, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Image       = AL_ICON_STAR,
+        ImageColor3 = Theme.TextMuted,
+        ScaleType   = Enum.ScaleType.Fit,
+        ZIndex      = 33,
+        Parent      = AutoLoadBtn,
+    })
+
     local ALLabel = Util.Create("TextLabel", {
         BackgroundTransparency = 1,
-        Size  = UDim2.new(1, -50, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        Text  = "Auto-load on start",
-        TextColor3 = Theme.TextDim,
-        FontFace   = Theme.FontMedium,
-        TextSize   = 11,
+        Size           = UDim2.new(1, -90, 1, 0),
+        Position       = UDim2.new(0, 28, 0, 0),
+        Text           = "Set as auto-load",
+        TextColor3     = Theme.TextMuted,
+        FontFace       = Theme.FontMedium,
+        TextSize       = 11,
         TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 33,
-        Parent = AutoLoadRow,
+        ZIndex         = 33,
+        Parent         = AutoLoadBtn,
     })
     Themed(ALLabel, { FontFace = function(t) return t.FontMedium end })
 
-    local _alOn = _readAutoLoadFile() ~= nil
-
-    local ALTrack = Util.Create("Frame", {
-        BackgroundColor3 = _alOn and Theme.Accent or Theme.ToggleOff,
-        Size     = UDim2.new(0, 30, 0, 15),
-        Position = UDim2.new(1, -38, 0.5, 0),
+    -- Status badge on the right
+    local ALBadge = Util.Create("Frame", {
+        BackgroundColor3       = Theme.SurfaceLight,
+        BackgroundTransparency = 0.2,
+        Size        = UDim2.new(0, 34, 0, 18),
+        Position    = UDim2.new(1, -42, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        BorderSizePixel = 0,
-        ZIndex   = 33,
-        Parent   = AutoLoadRow,
+        ZIndex      = 33,
+        Parent      = AutoLoadBtn,
     })
-    Util.AddCorner(ALTrack, UDim.new(1, 0))
-    Themed(ALTrack, { BackgroundColor3 = function(t) return _alOn and t.Accent or t.ToggleOff end })
+    Util.AddCorner(ALBadge, UDim.new(1, 0))
+    Themed(ALBadge, { BackgroundColor3 = function(t) return t.SurfaceLight end })
 
-    local ALKnob = Util.Create("Frame", {
-        BackgroundColor3 = Color3.new(1,1,1),
-        Size     = UDim2.new(0, 11, 0, 11),
-        Position = _alOn and UDim2.new(1,-13,0.5,0) or UDim2.new(0,2,0.5,0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        BorderSizePixel = 0,
-        ZIndex   = 34,
-        Parent   = ALTrack,
+    local ALBadgeTxt = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Size       = UDim2.new(1, 0, 1, 0),
+        Text       = "Off",
+        TextColor3 = Theme.TextMuted,
+        FontFace   = Theme.FontSemiBold,
+        TextSize   = 10,
+        ZIndex     = 34,
+        Parent     = ALBadge,
     })
-    Util.AddCorner(ALKnob, UDim.new(1, 0))
+    Themed(ALBadgeTxt, { FontFace = function(t) return t.FontSemiBold end })
 
     local ALHit = Util.Create("TextButton", {
         BackgroundTransparency = 1, Text = "",
-        Size = UDim2.new(1,0,1,0), ZIndex = 35,
-        Parent = AutoLoadRow,
+        Size = UDim2.new(1, 0, 1, 0), ZIndex = 35,
+        Parent = AutoLoadBtn,
     })
 
     local function UpdateAutoLoadRow()
-        local saved = _readAutoLoadFile()
-        _alOn = (saved ~= nil and selectedCfgName ~= nil and saved == selectedCfgName)
-        if _alOn then
-            ALLabel.Text      = "Auto-load: " .. (saved or "")
-            ALLabel.TextColor3 = Hyperion.Theme.Success
-            ALTrack.BackgroundColor3 = Hyperion.Theme.Accent
-            ALKnob.Position   = UDim2.new(1,-13,0.5,0)
+        local saved    = _readAutoLoadFile()
+        local isActive = (saved ~= nil and selectedCfgName ~= nil and saved == selectedCfgName)
+        if isActive then
+            ALIcon.Image       = AL_ICON_CHECK
+            ALIcon.ImageColor3 = Hyperion.Theme.Accent
+            ALLabel.Text       = "Auto-loading: " .. saved
+            ALLabel.TextColor3 = Hyperion.Theme.Accent
+            AutoLoadBtn.BackgroundTransparency = 0.15
+            Util.TweenFast(AutoLoadBtn, { BackgroundColor3 = Hyperion.Theme.AccentDark })
+            Util.TweenFast(_alStroke, { Color = Hyperion.Theme.Accent, Transparency = 0.1 })
+            ALBadgeTxt.Text       = "On"
+            ALBadgeTxt.TextColor3 = Hyperion.Theme.Accent
+            Util.TweenFast(ALBadge, { BackgroundColor3 = Hyperion.Theme.AccentDark })
         else
-            ALLabel.Text      = saved and ("Auto-load: " .. saved) or "Auto-load on start"
-            ALLabel.TextColor3 = saved and Hyperion.Theme.TextDim or Hyperion.Theme.TextMuted
-            ALTrack.BackgroundColor3 = Hyperion.Theme.ToggleOff
-            ALKnob.Position   = UDim2.new(0,2,0.5,0)
+            ALIcon.Image       = AL_ICON_STAR
+            ALIcon.ImageColor3 = Hyperion.Theme.TextMuted
+            ALLabel.Text       = selectedCfgName and "Set as auto-load" or "Select a config first"
+            ALLabel.TextColor3 = selectedCfgName and Hyperion.Theme.TextDim or Hyperion.Theme.TextMuted
+            AutoLoadBtn.BackgroundTransparency = 0.3
+            Util.TweenFast(AutoLoadBtn, { BackgroundColor3 = Hyperion.Theme.Surface })
+            Util.TweenFast(_alStroke, { Color = Hyperion.Theme.Border, Transparency = 0.4 })
+            ALBadgeTxt.Text       = saved and "On" or "Off"
+            ALBadgeTxt.TextColor3 = saved and Hyperion.Theme.Success or Hyperion.Theme.TextMuted
+            Util.TweenFast(ALBadge, { BackgroundColor3 = Hyperion.Theme.SurfaceLight })
         end
     end
+
+    ALHit.MouseEnter:Connect(function()
+        if not ((_readAutoLoadFile() ~= nil) and (selectedCfgName ~= nil) and (_readAutoLoadFile() == selectedCfgName)) then
+            Util.TweenFast(AutoLoadBtn, { BackgroundColor3 = Hyperion.Theme.SurfaceHover, BackgroundTransparency = 0 })
+        end
+    end)
+    ALHit.MouseLeave:Connect(function() UpdateAutoLoadRow() end)
 
     ALHit.MouseButton1Click:Connect(function()
         if not selectedCfgName or selectedCfgName == "" then
@@ -3496,6 +3530,107 @@ function Hyperion:CreateWindow(config)
             Hyperion:Notify({ Title="Auto-load", Content='"'..selectedCfgName..'" will load on start.', Type="Success", Duration=3 })
         end
         UpdateAutoLoadRow()
+    end)
+
+    -- ── Panel keybind row ─────────────────────────────────────────────────
+    local KbRow = Util.Create("Frame", {
+        Name                   = "CfgKbRow",
+        BackgroundColor3       = Theme.Surface,
+        BackgroundTransparency = 0.3,
+        Size                   = UDim2.new(1, -24, 0, 30),
+        ZIndex                 = 32,
+        Parent                 = CfgScroll,
+    })
+    Util.AddCorner(KbRow, Theme.CornerSmall)
+    local _kbRowStroke = Util.AddStroke(KbRow, Theme.Border, 1, 0.4)
+    Themed(KbRow, { BackgroundColor3 = function(t) return t.Surface end })
+    Themed(_kbRowStroke, { Color = function(t) return t.Border end })
+
+    local KbRowLabel = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Size           = UDim2.new(1, -90, 1, 0),
+        Position       = UDim2.new(0, 10, 0, 0),
+        Text           = "Panel shortcut",
+        TextColor3     = Theme.TextDim,
+        FontFace       = Theme.FontMedium,
+        TextSize       = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex         = 33,
+        Parent         = KbRow,
+    })
+    Themed(KbRowLabel, {
+        TextColor3 = function(t) return t.TextDim end,
+        FontFace   = function(t) return t.FontMedium end,
+    })
+
+    -- Restore saved keybind
+    local _cfgKbValue  = Enum.KeyCode.Unknown
+    local _cfgKbListen = false
+    do
+        local ok, raw = pcall(_rawReadfile, "Hyperion/kb_cfgpanel.dat")
+        if ok and raw and raw ~= "" then
+            local kc = Enum.KeyCode[raw]
+            if kc then _cfgKbValue = kc end
+        end
+    end
+
+    local function _cfgKbName(kc)
+        if kc == Enum.KeyCode.Unknown then return "None" end
+        return string.gsub(tostring(kc), "Enum.KeyCode.", "")
+    end
+
+    local KbBtn = Util.Create("TextButton", {
+        Name             = "KbBtn",
+        BackgroundColor3 = Theme.SurfaceLight,
+        Size             = UDim2.new(0, 72, 0, 22),
+        Position         = UDim2.new(1, -8, 0.5, 0),
+        AnchorPoint      = Vector2.new(1, 0.5),
+        Text             = _cfgKbName(_cfgKbValue),
+        TextColor3       = Theme.TextDim,
+        FontFace         = Theme.FontMedium,
+        TextSize         = 11,
+        AutoButtonColor  = false,
+        ZIndex           = 33,
+        Parent           = KbRow,
+    })
+    Util.AddCorner(KbBtn, Theme.CornerSmall)
+    local _kbBtnStroke = Util.AddStroke(KbBtn, Theme.BorderLight, 1, 0.25)
+    Themed(KbBtn, {
+        BackgroundColor3 = function(t) return t.SurfaceLight end,
+        TextColor3       = function(t) return _cfgKbListen and t.Accent or t.TextDim end,
+        FontFace         = function(t) return t.FontMedium end,
+    })
+    Themed(_kbBtnStroke, { Color = function(t) return _cfgKbListen and t.Accent or t.BorderLight end })
+
+    KbBtn.MouseButton1Click:Connect(function()
+        _cfgKbListen = true
+        KbBtn.Text = "..."
+        Util.TweenFast(_kbBtnStroke, { Color = Hyperion.Theme.Accent, Transparency = 0 })
+        Util.TweenFast(KbBtn, { TextColor3 = Hyperion.Theme.Accent })
+    end)
+
+    -- Forward ref: assigned after OpenConfigPanel/CloseConfigPanel are defined below.
+    local _cfgPanelToggle = nil
+
+    Util.Connect(UserInputService.InputBegan, function(input, processed)
+        if _cfgKbListen then
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                _cfgKbListen = false
+                _cfgKbValue  = (input.KeyCode == Enum.KeyCode.Escape)
+                               and Enum.KeyCode.Unknown or input.KeyCode
+                KbBtn.Text   = _cfgKbName(_cfgKbValue)
+                Util.TweenFast(_kbBtnStroke, { Color = Hyperion.Theme.Border, Transparency = 0.4 })
+                Util.TweenFast(KbBtn, { TextColor3 = Hyperion.Theme.TextDim })
+                Config.EnsureFolder()
+                pcall(_rawWritefile, "Hyperion/kb_cfgpanel.dat", _cfgKbName(_cfgKbValue))
+            end
+        elseif not processed
+            and _cfgKbValue ~= Enum.KeyCode.Unknown
+            and input.KeyCode == _cfgKbValue
+            and _cfgPanelToggle
+        then
+            _cfgPanelToggle()
+        end
     end)
 
     -- ── Bottom spacer so scrollable area has breathing room ───────────────
@@ -3677,6 +3812,12 @@ function Hyperion:CreateWindow(config)
                 ConfigOverlay.Visible = false
             end
         end)
+    end
+
+    -- Wire up the keybind toggle now that both functions exist
+    _cfgPanelToggle = function()
+        if Hyperion._configEnabled == false then return end
+        if cfgPanelOpen then CloseConfigPanel() else OpenConfigPanel() end
     end
 
     FolderOpenBtn.MouseButton1Click:Connect(function()
