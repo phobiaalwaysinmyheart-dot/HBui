@@ -3401,6 +3401,103 @@ function Hyperion:CreateWindow(config)
     BtnCancelDelete.MouseEnter:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceHover}) end)
     BtnCancelDelete.MouseLeave:Connect(function()  Util.TweenFast(BtnCancelDelete,  {BackgroundColor3 = Hyperion.Theme.SurfaceLight}) end)
 
+    -- ── Auto-load toggle row ─────────────────────────────────────────────
+    local AutoLoadRow = Util.Create("Frame", {
+        Name             = "AutoLoadRow",
+        BackgroundColor3 = Theme.Surface,
+        BackgroundTransparency = 0.3,
+        Size             = UDim2.new(1, -24, 0, 28),
+        ZIndex           = 32,
+        Parent           = CfgScroll,
+    })
+    Util.AddCorner(AutoLoadRow, Theme.CornerSmall)
+    local _alStroke = Util.AddStroke(AutoLoadRow, Theme.Border, 1, 0.4)
+    Themed(AutoLoadRow, { BackgroundColor3 = function(t) return t.Surface end })
+    Themed(_alStroke, { Color = function(t) return t.Border end })
+
+    local function _readAutoLoadFile()
+        local ok, v = pcall(_rawReadfile, "Hyperion/autoload.dat")
+        return (ok and v and v ~= "") and v or nil
+    end
+
+    local ALLabel = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Size  = UDim2.new(1, -50, 1, 0),
+        Position = UDim2.new(0, 10, 0, 0),
+        Text  = "Auto-load on start",
+        TextColor3 = Theme.TextDim,
+        FontFace   = Theme.FontMedium,
+        TextSize   = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 33,
+        Parent = AutoLoadRow,
+    })
+    Themed(ALLabel, { FontFace = function(t) return t.FontMedium end })
+
+    local _alOn = _readAutoLoadFile() ~= nil
+
+    local ALTrack = Util.Create("Frame", {
+        BackgroundColor3 = _alOn and Theme.Accent or Theme.ToggleOff,
+        Size     = UDim2.new(0, 30, 0, 15),
+        Position = UDim2.new(1, -38, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BorderSizePixel = 0,
+        ZIndex   = 33,
+        Parent   = AutoLoadRow,
+    })
+    Util.AddCorner(ALTrack, UDim.new(1, 0))
+    Themed(ALTrack, { BackgroundColor3 = function(t) return _alOn and t.Accent or t.ToggleOff end })
+
+    local ALKnob = Util.Create("Frame", {
+        BackgroundColor3 = Color3.new(1,1,1),
+        Size     = UDim2.new(0, 11, 0, 11),
+        Position = _alOn and UDim2.new(1,-13,0.5,0) or UDim2.new(0,2,0.5,0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        BorderSizePixel = 0,
+        ZIndex   = 34,
+        Parent   = ALTrack,
+    })
+    Util.AddCorner(ALKnob, UDim.new(1, 0))
+
+    local ALHit = Util.Create("TextButton", {
+        BackgroundTransparency = 1, Text = "",
+        Size = UDim2.new(1,0,1,0), ZIndex = 35,
+        Parent = AutoLoadRow,
+    })
+
+    local function UpdateAutoLoadRow()
+        local saved = _readAutoLoadFile()
+        _alOn = (saved ~= nil and selectedCfgName ~= nil and saved == selectedCfgName)
+        if _alOn then
+            ALLabel.Text      = "Auto-load: " .. (saved or "")
+            ALLabel.TextColor3 = Hyperion.Theme.Success
+            ALTrack.BackgroundColor3 = Hyperion.Theme.Accent
+            ALKnob.Position   = UDim2.new(1,-13,0.5,0)
+        else
+            ALLabel.Text      = saved and ("Auto-load: " .. saved) or "Auto-load on start"
+            ALLabel.TextColor3 = saved and Hyperion.Theme.TextDim or Hyperion.Theme.TextMuted
+            ALTrack.BackgroundColor3 = Hyperion.Theme.ToggleOff
+            ALKnob.Position   = UDim2.new(0,2,0.5,0)
+        end
+    end
+
+    ALHit.MouseButton1Click:Connect(function()
+        if not selectedCfgName or selectedCfgName == "" then
+            Hyperion:Notify({ Title="Auto-load", Content="Select a config first.", Type="Warning", Duration=2 })
+            return
+        end
+        local saved = _readAutoLoadFile()
+        if saved == selectedCfgName then
+            pcall(_rawWritefile, "Hyperion/autoload.dat", "")
+            Hyperion:Notify({ Title="Auto-load", Content="Disabled.", Type="Warning", Duration=2 })
+        else
+            Config.EnsureFolder()
+            pcall(_rawWritefile, "Hyperion/autoload.dat", selectedCfgName)
+            Hyperion:Notify({ Title="Auto-load", Content='"'..selectedCfgName..'" will load on start.', Type="Success", Duration=3 })
+        end
+        UpdateAutoLoadRow()
+    end)
+
     -- ── Bottom spacer so scrollable area has breathing room ───────────────
     Util.Create("Frame", {
         BackgroundTransparency = 1,
@@ -3514,6 +3611,7 @@ function Hyperion:CreateWindow(config)
                 CfgNameBox.Text = cfgName
                 SetStatus("Selected: " .. cfgName, Hyperion.Theme.TextDim)
                 RefreshConfigList()
+                UpdateAutoLoadRow()
             end)
         end
     end
@@ -3656,6 +3754,7 @@ function Hyperion:CreateWindow(config)
         if ok then
             selectedCfgName = name
             RefreshConfigList()
+            UpdateAutoLoadRow()
             SetStatus((overwrite and "Overwritten: " or "Saved: ") .. name, Hyperion.Theme.Success)
             Hyperion:Notify({Title = "Config", Content = (overwrite and "Overwritten: " or "Saved: ") .. name, Type = "Success", Duration = 3})
         else
@@ -6371,6 +6470,141 @@ function Hyperion:CreateWindow(config)
                 end)
             end
 
+            -- ==============================================
+            -- INFOBOX
+            -- ==============================================
+            function SectionObj:AddInfobox(cfg)
+                cfg = cfg or {}
+                local title   = cfg.Title or cfg.Name or "Info"
+                local content = cfg.Text  or cfg.Content or ""
+                local icon    = cfg.Icon
+                local iType   = cfg.Type or "Info"
+
+                local accentMap = {
+                    Info    = Theme.Info,
+                    Success = Theme.Success,
+                    Warning = Theme.Warning,
+                    Error   = Theme.Error,
+                }
+                local accent = accentMap[iType] or Theme.Accent
+
+                local Card = Util.Create("Frame", {
+                    Name = "Infobox",
+                    BackgroundColor3 = Theme.Surface,
+                    BackgroundTransparency = 0.25,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    BorderSizePixel = 0,
+                    ZIndex = 2,
+                    Parent = Elements,
+                })
+                Util.AddCorner(Card, Theme.CornerSmall)
+                local CardStroke = Util.AddStroke(Card, accent, 1, 0.5)
+                Themed(Card, { BackgroundColor3 = function(t) return t.Surface end })
+
+                -- Left accent stripe
+                local Stripe = Util.Create("Frame", {
+                    BackgroundColor3 = accent,
+                    BackgroundTransparency = 0.3,
+                    Size = UDim2.new(0, 2, 1, 0),
+                    BorderSizePixel = 0,
+                    ZIndex = 3,
+                    Parent = Card,
+                })
+                Util.AddCorner(Stripe, UDim.new(1, 0))
+
+                -- Inner padded content
+                local Inner = Util.Create("Frame", {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, -10, 0, 0),
+                    Position = UDim2.new(0, 10, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    ZIndex = 3,
+                    Parent = Card,
+                })
+                Util.AddList(Inner, Enum.FillDirection.Vertical, 3)
+                Util.AddPadding(Inner, 7, 6, 7, 4)
+
+                -- Title row
+                local TitleRow = Util.Create("Frame", {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 14),
+                    ZIndex = 3,
+                    Parent = Inner,
+                })
+
+                local iconOffset = 0
+                if icon then
+                    Util.Create("ImageLabel", {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(0, 12, 0, 12),
+                        Position = UDim2.new(0, 0, 0.5, 0),
+                        AnchorPoint = Vector2.new(0, 0.5),
+                        Image = icon,
+                        ImageColor3 = accent,
+                        ScaleType = Enum.ScaleType.Fit,
+                        ZIndex = 4,
+                        Parent = TitleRow,
+                    })
+                    iconOffset = 16
+                end
+
+                local TitleLbl = Util.Create("TextLabel", {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, -iconOffset, 1, 0),
+                    Position = UDim2.new(0, iconOffset, 0, 0),
+                    Text = title,
+                    TextColor3 = accent,
+                    FontFace = Theme.FontSemiBold,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 4,
+                    Parent = TitleRow,
+                })
+                Themed(TitleLbl, { FontFace = function(t) return t.FontSemiBold end })
+
+                local ContentLbl = Util.Create("TextLabel", {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = Enum.AutomaticSize.Y,
+                    Text = content,
+                    TextColor3 = Theme.TextDim,
+                    FontFace = Theme.Font,
+                    TextSize = 11,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextWrapped = true,
+                    ZIndex = 4,
+                    Parent = Inner,
+                })
+                Themed(ContentLbl, {
+                    TextColor3 = function(t) return t.TextDim end,
+                    FontFace   = function(t) return t.Font end,
+                })
+
+                local API = {}
+
+                function API:SetTitle(t)
+                    TitleLbl.Text = tostring(t)
+                end
+
+                function API:SetContent(t)
+                    ContentLbl.Text = tostring(t)
+                end
+
+                function API:SetType(newType)
+                    local na = (newType == "Info"    and Theme.Info)
+                            or (newType == "Success" and Theme.Success)
+                            or (newType == "Warning" and Theme.Warning)
+                            or (newType == "Error"   and Theme.Error)
+                            or Theme.Accent
+                    Util.TweenFast(CardStroke, { Color = na, Transparency = 0.5 })
+                    Util.TweenFast(Stripe, { BackgroundColor3 = na })
+                    Util.TweenFast(TitleLbl, { TextColor3 = na })
+                end
+
+                return API
+            end
+
             return SectionObj
         end -- AddSection
 
@@ -6383,12 +6617,15 @@ function Hyperion:CreateWindow(config)
     -- calling script finishes building tabs/sections/elements. We defer twice
     -- (RunService.Heartbeat + task.defer) so every element's registered
     -- FlagCallback exists before Config.Load fires them.
-    if windowConfig.ConfigSystem and windowConfig.ConfigAutoLoad then
-        local loadName = windowConfig.AutoLoadName
+    if windowConfig.ConfigSystem then
         task.defer(function()
             task.wait(0.05) -- small delay lets user's build code finish
             if Hyperion._configEnabled == false then return end
-            if _rawIsfile("Hyperion/Configs/" .. loadName .. ".json") then
+            -- Prefer the name written by the autoload toggle in the config panel
+            local ok, dat = pcall(_rawReadfile, "Hyperion/autoload.dat")
+            local loadName = (ok and dat and dat ~= "") and dat or
+                             (windowConfig.ConfigAutoLoad and windowConfig.AutoLoadName or nil)
+            if loadName and _rawIsfile("Hyperion/Configs/" .. loadName .. ".json") then
                 Config.Load(loadName, Hyperion.Flags, Hyperion.FlagCallbacks)
             end
         end)
