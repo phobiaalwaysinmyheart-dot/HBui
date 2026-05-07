@@ -567,6 +567,76 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(38, 12, 24),
         InputBg      = Color3.fromRGB(22, 6, 14),
     },
+    Christmas = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(200, 235, 255),  -- icy white-blue snowflakes
+        ParticleStyle = "stars",
+        GradientStops = {
+            {0,    Color3.fromRGB(4, 12, 6)},
+            {0.2,  Color3.fromRGB(8, 28, 10)},
+            {0.35, Color3.fromRGB(14, 44, 12)},
+            {0.5,  Color3.fromRGB(88, 12, 12)},       -- dark crimson center
+            {0.65, Color3.fromRGB(14, 42, 10)},
+            {0.8,  Color3.fromRGB(8, 25, 8)},
+            {1,    Color3.fromRGB(4, 12, 6)},
+        },
+        Accent       = Color3.fromRGB(215, 38, 38),    -- Christmas red
+        AccentDark   = Color3.fromRGB(165, 20, 20),
+        AccentLight  = Color3.fromRGB(245, 70, 70),
+        AccentGlow   = Color3.fromRGB(230, 50, 50),
+        AccentSub    = Color3.fromRGB(30, 140, 40),    -- holly green secondary
+        Background   = Color3.fromRGB(5, 12, 6),
+        Surface      = Color3.fromRGB(9, 20, 10),
+        SurfaceLight = Color3.fromRGB(14, 30, 15),
+        SurfaceHover = Color3.fromRGB(20, 42, 20),
+        SurfaceActive= Color3.fromRGB(26, 52, 26),
+        Sidebar      = Color3.fromRGB(6, 14, 7),
+        SidebarActive= Color3.fromRGB(18, 35, 18),
+        Text         = Color3.fromRGB(240, 255, 240),
+        TextDim      = Color3.fromRGB(155, 195, 160),
+        TextMuted    = Color3.fromRGB(70, 105, 75),
+        Border       = Color3.fromRGB(30, 65, 30),
+        BorderLight  = Color3.fromRGB(45, 90, 45),
+        ToggleOff    = Color3.fromRGB(20, 46, 20),
+        SliderBg     = Color3.fromRGB(12, 28, 12),
+        InputBg      = Color3.fromRGB(6, 14, 6),
+    },
+    Neko = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(255, 185, 220),  -- soft pink hearts
+        ParticleStyle = "hearts",
+        GradientStops = {
+            {0,    Color3.fromRGB(18, 8, 16)},
+            {0.2,  Color3.fromRGB(35, 12, 30)},
+            {0.35, Color3.fromRGB(55, 18, 45)},
+            {0.5,  Color3.fromRGB(45, 15, 40)},
+            {0.65, Color3.fromRGB(52, 16, 42)},
+            {0.8,  Color3.fromRGB(30, 10, 26)},
+            {1,    Color3.fromRGB(18, 8, 16)},
+        },
+        Accent       = Color3.fromRGB(255, 130, 185),  -- bubblegum pink
+        AccentDark   = Color3.fromRGB(210, 85, 145),
+        AccentLight  = Color3.fromRGB(255, 165, 210),
+        AccentGlow   = Color3.fromRGB(255, 145, 198),
+        AccentSub    = Color3.fromRGB(185, 90, 220),   -- lavender secondary
+        Background   = Color3.fromRGB(18, 8, 16),
+        Surface      = Color3.fromRGB(28, 13, 25),
+        SurfaceLight = Color3.fromRGB(42, 20, 38),
+        SurfaceHover = Color3.fromRGB(58, 28, 52),
+        SurfaceActive= Color3.fromRGB(72, 35, 65),
+        Sidebar      = Color3.fromRGB(20, 9, 18),
+        SidebarActive= Color3.fromRGB(50, 22, 45),
+        Text         = Color3.fromRGB(255, 230, 245),
+        TextDim      = Color3.fromRGB(200, 155, 180),
+        TextMuted    = Color3.fromRGB(115, 75, 100),
+        Border       = Color3.fromRGB(80, 32, 65),
+        BorderLight  = Color3.fromRGB(115, 48, 95),
+        ToggleOff    = Color3.fromRGB(55, 22, 48),
+        SliderBg     = Color3.fromRGB(34, 14, 30),
+        InputBg      = Color3.fromRGB(20, 9, 17),
+    },
 }
 
 -- Apply a named theme or a custom table of color overrides.
