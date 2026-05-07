@@ -1061,7 +1061,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle, s
     local function spawnPaw()
         if not isAlive() then return end
         local W, H = getCanvasSize()
-        local sz = math.random(26, 44)
+        local sz = math.random(10, 18)
         local container = Instance.new("Frame")
         container.BackgroundTransparency = 1
         container.ClipsDescendants = false
@@ -1100,7 +1100,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle, s
         table.insert(Hyperion._starFrames, container)
         table.insert(activeParticles, {
             type = "paw", frame = container, alive = true,
-            x = math.random(20, W - 20), y = -sz,
+            x = math.random(10, W - 10), y = -sz,
             speed = math.random(28, 52),
             swayAmp = math.random(10, 24), swaySpeed = math.random(4, 9) / 10,
             rotSpeed = math.random(-15, 15),
@@ -1356,9 +1356,17 @@ function Hyperion:SetTheme(nameOrTable)
     local _bgTint = preset and preset.BackgroundTint
     if Hyperion._bgImageLabel then
         if _bgImg and _bgImg ~= "" then
-            local imgId = (type(_bgImg) == "number") and ("rbxassetid://" .. _bgImg) or _bgImg
-            Hyperion._bgImageLabel.Image   = imgId
-            Hyperion._bgImageLabel.Visible = true
+            local imgId
+            if type(_bgImg) == "number" then
+                imgId = "rbxthumb://type=Asset&id=" .. _bgImg .. "&w=420&h=420"
+            else
+                local _id = tostring(_bgImg):match("rbxassetid://(%d+)")
+                imgId = _id and ("rbxthumb://type=Asset&id=" .. _id .. "&w=420&h=420") or _bgImg
+            end
+            Hyperion._bgImageLabel.Image             = imgId
+            Hyperion._bgImageLabel.ImageTransparency = 0
+            Hyperion._bgImageLabel.ImageColor3       = Color3.new(1, 1, 1)
+            Hyperion._bgImageLabel.Visible           = true
             if Hyperion._bgTintFrame then
                 local ta = (_bgTint ~= nil) and _bgTint or 0.45
                 Hyperion._bgTintFrame.BackgroundTransparency = 1 - ta
@@ -4340,10 +4348,18 @@ function Hyperion:CreateWindow(config)
             return
         end
         if type(imageId) == "number" then
-            imageId = "rbxassetid://" .. imageId
+            imageId = "rbxthumb://type=Asset&id=" .. imageId .. "&w=420&h=420"
+        elseif type(imageId) == "string" then
+            -- Convert plain rbxassetid to a thumbnail URL so it works for any asset type
+            local id = imageId:match("rbxassetid://(%d+)")
+            if id then
+                imageId = "rbxthumb://type=Asset&id=" .. id .. "&w=420&h=420"
+            end
         end
-        BgImage.Image   = imageId
-        BgImage.Visible = true
+        BgImage.Image             = imageId
+        BgImage.ImageTransparency = 0
+        BgImage.ImageColor3       = Color3.new(1, 1, 1)
+        BgImage.Visible           = true
         BgTint.BackgroundTransparency = 1 - (tintAlpha or 0.45)
         BgTint.Visible  = (tintAlpha or 0.45) > 0
     end
