@@ -621,8 +621,8 @@ Hyperion.Themes = {
     Neko = {
         Logo          = nil,
         Animated      = true,
-        BackgroundImage = nil,   -- set to rbxassetid:// string to enable; nil = gradient only
-        BackgroundTint  = 0.50,  -- 0 = transparent overlay, 1 = fully opaque dark tint
+        BackgroundImage = "rbxassetid://479321376",
+        BackgroundTint  = 0.52,
         StarColor     = Color3.fromRGB(255, 160, 200),
         StarColors    = {
             Color3.fromRGB(255, 110, 170),  -- hot pink
@@ -642,35 +642,35 @@ Hyperion.Themes = {
             ColorSequenceKeypoint.new(1,   Color3.fromRGB(205, 90,  255)),
         },
         GradientStops = {
-            {0,    Color3.fromRGB(10,  4,  18)},
-            {0.12, Color3.fromRGB(30,  8,  48)},
-            {0.28, Color3.fromRGB(65,  14, 75)},
-            {0.42, Color3.fromRGB(90,  10, 80)},
-            {0.55, Color3.fromRGB(78,  8,  72)},
-            {0.7,  Color3.fromRGB(50,  10, 58)},
-            {0.86, Color3.fromRGB(22,  5,  32)},
-            {1,    Color3.fromRGB(10,  4,  18)},
+            {0,    Color3.fromRGB(8,   3,  14)},
+            {0.12, Color3.fromRGB(28,  6,  30)},
+            {0.28, Color3.fromRGB(60,  10, 40)},
+            {0.42, Color3.fromRGB(88,  14, 48)},
+            {0.55, Color3.fromRGB(75,  10, 42)},
+            {0.7,  Color3.fromRGB(46,  8,  30)},
+            {0.86, Color3.fromRGB(20,  4,  18)},
+            {1,    Color3.fromRGB(8,   3,  14)},
         },
-        Accent       = Color3.fromRGB(255, 95,  165),
-        AccentDark   = Color3.fromRGB(210, 55,  120),
-        AccentLight  = Color3.fromRGB(255, 155, 205),
-        AccentGlow   = Color3.fromRGB(255, 110, 180),
-        AccentSub    = Color3.fromRGB(195, 90,  250),
-        Background   = Color3.fromRGB(10,  4,  18),
-        Surface      = Color3.fromRGB(22,  10, 32),
-        SurfaceLight = Color3.fromRGB(40,  16, 55),
-        SurfaceHover = Color3.fromRGB(60,  22, 78),
-        SurfaceActive= Color3.fromRGB(78,  28, 98),
-        Sidebar      = Color3.fromRGB(14,  5,  22),
-        SidebarActive= Color3.fromRGB(50,  18, 68),
-        Text         = Color3.fromRGB(255, 238, 252),
-        TextDim      = Color3.fromRGB(218, 158, 200),
-        TextMuted    = Color3.fromRGB(122, 80,  118),
-        Border       = Color3.fromRGB(100, 34,  85),
-        BorderLight  = Color3.fromRGB(148, 52,  125),
-        ToggleOff    = Color3.fromRGB(65,  22,  60),
-        SliderBg     = Color3.fromRGB(38,  12,  42),
-        InputBg      = Color3.fromRGB(16,  6,   24),
+        Accent       = Color3.fromRGB(255, 90,  155),
+        AccentDark   = Color3.fromRGB(200, 45,  105),
+        AccentLight  = Color3.fromRGB(255, 148, 198),
+        AccentGlow   = Color3.fromRGB(255, 105, 170),
+        AccentSub    = Color3.fromRGB(190, 80,  240),
+        Background   = Color3.fromRGB(8,   3,  14),
+        Surface      = Color3.fromRGB(20,  8,  26),
+        SurfaceLight = Color3.fromRGB(38,  14, 45),
+        SurfaceHover = Color3.fromRGB(58,  20, 65),
+        SurfaceActive= Color3.fromRGB(75,  26, 82),
+        Sidebar      = Color3.fromRGB(12,  4,  18),
+        SidebarActive= Color3.fromRGB(48,  16, 58),
+        Text         = Color3.fromRGB(255, 235, 248),
+        TextDim      = Color3.fromRGB(215, 150, 190),
+        TextMuted    = Color3.fromRGB(118, 72,  108),
+        Border       = Color3.fromRGB(98,  28,  72),
+        BorderLight  = Color3.fromRGB(145, 44,  108),
+        ToggleOff    = Color3.fromRGB(62,  18,  52),
+        SliderBg     = Color3.fromRGB(36,  10,  36),
+        InputBg      = Color3.fromRGB(14,  4,   20),
     },
 }
 
@@ -1347,12 +1347,15 @@ end
 -- Hook into SetTheme to start/stop animation
 local _originalSetTheme = Hyperion.SetTheme
 function Hyperion:SetTheme(nameOrTable)
-    _originalSetTheme(self, nameOrTable)
-    Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
+    -- Resolve preset and stamp extras onto Hyperion.Theme BEFORE _originalSetTheme
+    -- fires ThemeListeners, so every callback (ApplyWindowLogo, _titleGradient, etc.)
+    -- already sees the new theme's values rather than the previous theme's stale ones.
     local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
     Hyperion.Theme.TitleGradient = preset and preset.TitleGradient or nil
     Hyperion.Theme.LogoGradient  = preset and preset.LogoGradient  or nil
     Hyperion.Theme.StarColors    = preset and preset.StarColors     or nil
+    _originalSetTheme(self, nameOrTable)
+    Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
     -- Apply / clear background image
     local _bgImg  = preset and preset.BackgroundImage or nil
     local _bgTint = preset and preset.BackgroundTint
