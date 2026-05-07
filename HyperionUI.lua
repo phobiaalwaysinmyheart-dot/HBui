@@ -570,8 +570,24 @@ Hyperion.Themes = {
     Christmas = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(200, 235, 255),  -- icy white-blue snowflakes
+        StarColor    = Color3.fromRGB(255, 255, 255),
+        StarColors   = {
+            Color3.fromRGB(255, 60,  60),   -- red
+            Color3.fromRGB(255, 255, 255),  -- white
+            Color3.fromRGB(255, 210, 50),   -- gold
+            Color3.fromRGB(50,  210, 70),   -- holly green
+        },
         ParticleStyle = "stars",
+        TitleGradient = {
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(50,  200, 70)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(215, 38,  38)),
+        },
+        LogoGradient = {
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 210, 50)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 30)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(215, 38,  38)),
+        },
         GradientStops = {
             {0,    Color3.fromRGB(4, 12, 6)},
             {0.2,  Color3.fromRGB(8, 28, 10)},
@@ -605,8 +621,8 @@ Hyperion.Themes = {
     Neko = {
         Logo         = nil,
         Animated     = true,
-        StarColor    = Color3.fromRGB(255, 185, 220),  -- soft pink hearts
-        ParticleStyle = "hearts",
+        StarColor    = Color3.fromRGB(255, 185, 220),
+        ParticleStyle = "paws",
         GradientStops = {
             {0,    Color3.fromRGB(18, 8, 16)},
             {0.2,  Color3.fromRGB(35, 12, 30)},
@@ -651,7 +667,7 @@ function Hyperion:SetTheme(nameOrTable)
     -- Store the logo override so windows can read it
     Hyperion._themeLogo = preset.Logo or nil
     for k, v in pairs(preset) do
-        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" and k ~= "ParticleStyle" then
+        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" and k ~= "ParticleStyle" and k ~= "StarColors" and k ~= "TitleGradient" and k ~= "LogoGradient" then
             Hyperion.Theme[k] = v
         end
     end
@@ -692,7 +708,7 @@ local function _stopStarfield()
     Hyperion._starFrames = {}
 end
 
-local function _startStarfield(parent, starColor, meteorParent, particleStyle)
+local function _startStarfield(parent, starColor, meteorParent, particleStyle, starColors)
     _stopStarfield()
     local ts = game:GetService("TweenService")
     local active = true
@@ -700,6 +716,14 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     local color = starColor or Color3.fromRGB(200, 220, 255)
     local mParent = meteorParent or parent
     local pStyle = particleStyle or "stars"
+
+    local _palette = (type(starColors) == "table" and #starColors > 0) and starColors or nil
+    local function getParticleColor()
+        if _palette then
+            return _palette[math.random(1, #_palette)]
+        end
+        return color
+    end
 
     local function isAlive()
         return active and gen == Hyperion._starGen and parent and parent.Parent
@@ -719,6 +743,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         local fadeOut = math.random(12, 28) / 10
         local pause   = math.random(5,  30) / 10
 
+        local ambColor = getParticleColor()
         local ringFrames = {}
         if hasGlow then
             local rings = {
@@ -728,7 +753,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
             for _, def in ipairs(rings) do
                 local rSize = math.max(1, coreSize * def.mult)
                 local r = Instance.new("Frame")
-                r.BackgroundColor3 = color
+                r.BackgroundColor3 = ambColor
                 r.BackgroundTransparency = 1
                 r.BorderSizePixel = 0
                 r.Size = UDim2.new(0, rSize, 0, rSize)
@@ -819,9 +844,10 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         local speed = math.random(180, 320)
         local tailLen = math.random(35, 70)
         local headSz = math.random(2, 3)
+        local starC = getParticleColor()
 
         local tail = Instance.new("Frame")
-        tail.BackgroundColor3 = color; tail.BorderSizePixel = 0
+        tail.BackgroundColor3 = starC; tail.BorderSizePixel = 0
         tail.Size = UDim2.fromOffset(1, tailLen)
         tail.Position = UDim2.fromOffset(startX, -tailLen - 10)
         tail.ZIndex = 2; tail.Parent = mParent
@@ -833,7 +859,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
 
         local gSz = headSz * 4
         local glow = Instance.new("Frame")
-        glow.BackgroundColor3 = color; glow.BackgroundTransparency = 0.7; glow.BorderSizePixel = 0
+        glow.BackgroundColor3 = starC; glow.BackgroundTransparency = 0.7; glow.BorderSizePixel = 0
         glow.Size = UDim2.fromOffset(gSz, gSz); glow.AnchorPoint = Vector2.new(0.5, 0.5)
         glow.Position = UDim2.fromOffset(startX, -10); glow.ZIndex = 3; glow.Parent = mParent
         Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
@@ -1012,6 +1038,64 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
         })
     end
 
+    -- PAWS: cute paw prints that drift down with sway and rotation (Neko)
+    local function spawnPaw()
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(10, 20)
+        -- Construct paw from UI: large central pad + 4 toe beans
+        local container = Instance.new("Frame")
+        container.BackgroundTransparency = 1
+        container.Size = UDim2.fromOffset(sz, sz)
+        container.AnchorPoint = Vector2.new(0.5, 0.5)
+        container.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        container.Rotation = math.random(-20, 20)
+        container.ZIndex = 4
+        container.Parent = mParent
+
+        local pawColor = getParticleColor()
+        local alpha = math.random(20, 45) / 100
+
+        -- Central pad (large oval)
+        local pad = Instance.new("Frame")
+        pad.BackgroundColor3 = pawColor
+        pad.BackgroundTransparency = alpha
+        pad.BorderSizePixel = 0
+        pad.Size = UDim2.new(0.55, 0, 0.55, 0)
+        pad.Position = UDim2.new(0.225, 0, 0.38, 0)
+        pad.ZIndex = 4
+        pad.Parent = container
+        Instance.new("UICorner", pad).CornerRadius = UDim.new(1, 0)
+
+        -- 4 toe beans (small ovals arranged in arc above the main pad)
+        local toes = {
+            {0.02, 0.02}, {0.3, -0.08}, {0.58, -0.08}, {0.76, 0.02}
+        }
+        for _, pos in ipairs(toes) do
+            local toe = Instance.new("Frame")
+            toe.BackgroundColor3 = pawColor
+            toe.BackgroundTransparency = alpha
+            toe.BorderSizePixel = 0
+            toe.Size = UDim2.new(0.24, 0, 0.28, 0)
+            toe.Position = UDim2.new(pos[1], 0, pos[2], 0)
+            toe.ZIndex = 4
+            toe.Parent = container
+            Instance.new("UICorner", toe).CornerRadius = UDim.new(1, 0)
+        end
+
+        table.insert(Hyperion._starFrames, container)
+        table.insert(activeParticles, {
+            type = "paw", frame = container, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(22, 50),
+            swayAmp = math.random(12, 30), swaySpeed = math.random(5, 11) / 10,
+            rotSpeed = math.random(-25, 25),
+            phase = math.random(0, 628) / 100, time = 0,
+            alpha = alpha,
+            maxY = H + sz + 20, fadeStart = H * 0.65,
+        })
+    end
+
     -- GRIDLINES: horizontal cyan perspective lines that scroll up from the
     -- bottom and scale wider as they rise — the signature "vaporwave grid
     -- floor receding into the horizon" effect. (Vaporwave)
@@ -1058,7 +1142,7 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     local spawnFn = {
         stars = spawnStar, petals = spawnPetal, bubbles = spawnBubble,
         embers = spawnEmber, wisps = spawnWisp, orbs = spawnOrb,
-        gridlines = spawnGridline, hearts = spawnHeart,
+        gridlines = spawnGridline, hearts = spawnHeart, paws = spawnPaw,
     }
     local spawnFunc = spawnFn[pStyle] or spawnStar
 
@@ -1066,8 +1150,9 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
     local intervalRange = {
         stars = {14, 28}, petals = {3, 8}, bubbles = {4, 10},
         embers = {3, 7}, wisps = {10, 22}, orbs = {8, 18},
-        gridlines = {6, 11},   -- ~1 line every 0.6–1.1s, steady grid feel
-        hearts = {4, 9},        -- ~1 heart every 0.4–0.9s
+        gridlines = {6, 11},
+        hearts = {4, 9},
+        paws   = {5, 11},
     }
     local iRange = intervalRange[pStyle] or {14, 28}
 
@@ -1192,6 +1277,26 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle)
                     p.frame.ImageTransparency = math.max(p.frame.ImageTransparency, ft)
                 end
                 if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
+
+            elseif p.type == "paw" then
+                -- Falling paw print (Frame container) with sway + rotation.
+                -- Children are Frames, so we fade via BackgroundTransparency on each.
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                p.frame.Rotation = p.frame.Rotation + p.rotSpeed * dt
+                if p.y > p.fadeStart then
+                    local ft = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
+                    local newAlpha = math.max(p.alpha, ft)
+                    for _, child in ipairs(p.frame:GetChildren()) do
+                        if child:IsA("Frame") then
+                            child.BackgroundTransparency = newAlpha
+                        end
+                    end
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
             end
         end
 
@@ -1226,6 +1331,9 @@ function Hyperion:SetTheme(nameOrTable)
     _originalSetTheme(self, nameOrTable)
     Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
     local preset = type(nameOrTable) == "string" and Hyperion.Themes[nameOrTable] or nameOrTable
+    Hyperion.Theme.TitleGradient = preset and preset.TitleGradient or nil
+    Hyperion.Theme.LogoGradient  = preset and preset.LogoGradient  or nil
+    Hyperion.Theme.StarColors    = preset and preset.StarColors     or nil
     -- Apply gradient directly onto MainFrame's UIGradient
     if Hyperion._bgGradient then
         if preset and preset.Animated then
@@ -1277,7 +1385,7 @@ function Hyperion:SetTheme(nameOrTable)
         end
     end
     if preset and preset.Animated and Hyperion._starParent then
-        _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent, preset.ParticleStyle)
+        _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent, preset.ParticleStyle, preset.StarColors)
     else
         _stopStarfield()
     end
@@ -2500,7 +2608,17 @@ function Hyperion:CreateWindow(config)
         end
 
         LogoImage.Image = activeLogo or ""
-        LogoImage.ImageColor3 = themeObj.Accent
+        local existingLogoGrad = LogoImage:FindFirstChildWhichIsA("UIGradient")
+        if existingLogoGrad then existingLogoGrad:Destroy() end
+        if themeObj.LogoGradient then
+            local lg = Instance.new("UIGradient")
+            lg.Color = ColorSequence.new(themeObj.LogoGradient)
+            lg.Rotation = 90
+            lg.Parent = LogoImage
+            LogoImage.ImageColor3 = Color3.new(1, 1, 1)
+        else
+            LogoImage.ImageColor3 = themeObj.Accent
+        end
         LogoImage.Visible = (activeLogo ~= nil and activeLogo ~= "")
     end
 
@@ -2534,6 +2652,9 @@ function Hyperion:CreateWindow(config)
     })
     Themed(_titleGradient, {
         Color = function(t)
+            if t.TitleGradient then
+                return ColorSequence.new(t.TitleGradient)
+            end
             return ColorSequence.new({
                 ColorSequenceKeypoint.new(0, t.Text),
                 ColorSequenceKeypoint.new(0.5, t.AccentLight),
