@@ -619,39 +619,58 @@ Hyperion.Themes = {
         InputBg      = Color3.fromRGB(6, 14, 6),
     },
     Neko = {
-        Logo         = nil,
-        Animated     = true,
-        StarColor    = Color3.fromRGB(255, 185, 220),
-        ParticleStyle = "paws",
-        GradientStops = {
-            {0,    Color3.fromRGB(18, 8, 16)},
-            {0.2,  Color3.fromRGB(35, 12, 30)},
-            {0.35, Color3.fromRGB(55, 18, 45)},
-            {0.5,  Color3.fromRGB(45, 15, 40)},
-            {0.65, Color3.fromRGB(52, 16, 42)},
-            {0.8,  Color3.fromRGB(30, 10, 26)},
-            {1,    Color3.fromRGB(18, 8, 16)},
+        Logo          = nil,
+        Animated      = true,
+        BackgroundImage = nil,   -- set to rbxassetid:// string to enable; nil = gradient only
+        BackgroundTint  = 0.50,  -- 0 = transparent overlay, 1 = fully opaque dark tint
+        StarColor     = Color3.fromRGB(255, 160, 200),
+        StarColors    = {
+            Color3.fromRGB(255, 110, 170),  -- hot pink
+            Color3.fromRGB(255, 200, 235),  -- pale blush
+            Color3.fromRGB(200, 130, 255),  -- soft violet
+            Color3.fromRGB(255, 245, 250),  -- near white
         },
-        Accent       = Color3.fromRGB(255, 130, 185),  -- bubblegum pink
-        AccentDark   = Color3.fromRGB(210, 85, 145),
-        AccentLight  = Color3.fromRGB(255, 165, 210),
-        AccentGlow   = Color3.fromRGB(255, 145, 198),
-        AccentSub    = Color3.fromRGB(185, 90, 220),   -- lavender secondary
-        Background   = Color3.fromRGB(18, 8, 16),
-        Surface      = Color3.fromRGB(28, 13, 25),
-        SurfaceLight = Color3.fromRGB(42, 20, 38),
-        SurfaceHover = Color3.fromRGB(58, 28, 52),
-        SurfaceActive= Color3.fromRGB(72, 35, 65),
-        Sidebar      = Color3.fromRGB(20, 9, 18),
-        SidebarActive= Color3.fromRGB(50, 22, 45),
-        Text         = Color3.fromRGB(255, 230, 245),
-        TextDim      = Color3.fromRGB(200, 155, 180),
-        TextMuted    = Color3.fromRGB(115, 75, 100),
-        Border       = Color3.fromRGB(80, 32, 65),
-        BorderLight  = Color3.fromRGB(115, 48, 95),
-        ToggleOff    = Color3.fromRGB(55, 22, 48),
-        SliderBg     = Color3.fromRGB(34, 14, 30),
-        InputBg      = Color3.fromRGB(20, 9, 17),
+        ParticleStyle = "paws",
+        TitleGradient = {
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 100, 170)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(195, 110, 255)),
+        },
+        LogoGradient = {
+            ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 70,  140)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 145, 205)),
+            ColorSequenceKeypoint.new(1,   Color3.fromRGB(205, 90,  255)),
+        },
+        GradientStops = {
+            {0,    Color3.fromRGB(10,  4,  18)},
+            {0.12, Color3.fromRGB(30,  8,  48)},
+            {0.28, Color3.fromRGB(65,  14, 75)},
+            {0.42, Color3.fromRGB(90,  10, 80)},
+            {0.55, Color3.fromRGB(78,  8,  72)},
+            {0.7,  Color3.fromRGB(50,  10, 58)},
+            {0.86, Color3.fromRGB(22,  5,  32)},
+            {1,    Color3.fromRGB(10,  4,  18)},
+        },
+        Accent       = Color3.fromRGB(255, 95,  165),
+        AccentDark   = Color3.fromRGB(210, 55,  120),
+        AccentLight  = Color3.fromRGB(255, 155, 205),
+        AccentGlow   = Color3.fromRGB(255, 110, 180),
+        AccentSub    = Color3.fromRGB(195, 90,  250),
+        Background   = Color3.fromRGB(10,  4,  18),
+        Surface      = Color3.fromRGB(22,  10, 32),
+        SurfaceLight = Color3.fromRGB(40,  16, 55),
+        SurfaceHover = Color3.fromRGB(60,  22, 78),
+        SurfaceActive= Color3.fromRGB(78,  28, 98),
+        Sidebar      = Color3.fromRGB(14,  5,  22),
+        SidebarActive= Color3.fromRGB(50,  18, 68),
+        Text         = Color3.fromRGB(255, 238, 252),
+        TextDim      = Color3.fromRGB(218, 158, 200),
+        TextMuted    = Color3.fromRGB(122, 80,  118),
+        Border       = Color3.fromRGB(100, 34,  85),
+        BorderLight  = Color3.fromRGB(148, 52,  125),
+        ToggleOff    = Color3.fromRGB(65,  22,  60),
+        SliderBg     = Color3.fromRGB(38,  12,  42),
+        InputBg      = Color3.fromRGB(16,  6,   24),
     },
 }
 
@@ -667,7 +686,7 @@ function Hyperion:SetTheme(nameOrTable)
     -- Store the logo override so windows can read it
     Hyperion._themeLogo = preset.Logo or nil
     for k, v in pairs(preset) do
-        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" and k ~= "ParticleStyle" and k ~= "StarColors" and k ~= "TitleGradient" and k ~= "LogoGradient" then
+        if k ~= "Logo" and k ~= "GradientStops" and k ~= "GradientMid" and k ~= "Animated" and k ~= "StarColor" and k ~= "ParticleStyle" and k ~= "StarColors" and k ~= "TitleGradient" and k ~= "LogoGradient" and k ~= "BackgroundImage" and k ~= "BackgroundTint" then
             Hyperion.Theme[k] = v
         end
     end
@@ -1334,6 +1353,24 @@ function Hyperion:SetTheme(nameOrTable)
     Hyperion.Theme.TitleGradient = preset and preset.TitleGradient or nil
     Hyperion.Theme.LogoGradient  = preset and preset.LogoGradient  or nil
     Hyperion.Theme.StarColors    = preset and preset.StarColors     or nil
+    -- Apply / clear background image
+    local _bgImg  = preset and preset.BackgroundImage or nil
+    local _bgTint = preset and preset.BackgroundTint
+    if Hyperion._bgImageLabel then
+        if _bgImg and _bgImg ~= "" then
+            local imgId = (type(_bgImg) == "number") and ("rbxassetid://" .. _bgImg) or _bgImg
+            Hyperion._bgImageLabel.Image   = imgId
+            Hyperion._bgImageLabel.Visible = true
+            if Hyperion._bgTintFrame then
+                local ta = (_bgTint ~= nil) and _bgTint or 0.45
+                Hyperion._bgTintFrame.BackgroundTransparency = 1 - ta
+                Hyperion._bgTintFrame.Visible = ta > 0
+            end
+        else
+            Hyperion._bgImageLabel.Visible = false
+            if Hyperion._bgTintFrame then Hyperion._bgTintFrame.Visible = false end
+        end
+    end
     -- Apply gradient directly onto MainFrame's UIGradient
     if Hyperion._bgGradient then
         if preset and preset.Animated then
@@ -2496,6 +2533,25 @@ function Hyperion:CreateWindow(config)
         Parent           = MainFrame,
     })
     Util.AddCorner(BgTint, Theme.CornerLarge)
+
+    -- Expose to SetTheme override so theme-driven backgrounds work
+    Hyperion._bgImageLabel = BgImage
+    Hyperion._bgTintFrame  = BgTint
+
+    -- Apply background image if the active theme already has one
+    do
+        local _cpNow = Hyperion._currentThemeName and Hyperion.Themes[Hyperion._currentThemeName]
+        if _cpNow and _cpNow.BackgroundImage and _cpNow.BackgroundImage ~= "" then
+            local _imgId = (type(_cpNow.BackgroundImage) == "number")
+                and ("rbxassetid://" .. _cpNow.BackgroundImage)
+                or _cpNow.BackgroundImage
+            BgImage.Image   = _imgId
+            BgImage.Visible = true
+            local _ta = (_cpNow.BackgroundTint ~= nil) and _cpNow.BackgroundTint or 0.45
+            BgTint.BackgroundTransparency = 1 - _ta
+            BgTint.Visible = _ta > 0
+        end
+    end
 
     -- Drop shadow (outside via negative offset)
     local Shadow = Util.Create("ImageLabel", {
