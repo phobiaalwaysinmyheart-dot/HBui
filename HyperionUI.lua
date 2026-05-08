@@ -622,7 +622,7 @@ Hyperion.Themes = {
         Logo            = nil,
         Animated        = true,
         TitleText       = "∧ Hyperion ∧",
-        BackgroundImage = "rbxassetid://479321376",
+        BackgroundImage = "rbxassetid://76774789",
         BackgroundTint  = 0.10,
         StarColor     = Color3.fromRGB(220, 155, 185),
         StarColors    = {
@@ -3337,7 +3337,7 @@ function Hyperion:CreateWindow(config)
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 14, 0, 7),
         Size     = UDim2.new(1, -52, 0, 16),
-        Text     = "SETTINGS",
+        Text     = "Config",
         TextColor3 = Theme.Text,
         FontFace = Theme.FontBold,
         TextSize = 12,
