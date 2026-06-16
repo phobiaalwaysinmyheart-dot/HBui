@@ -48,9 +48,24 @@ local RunService     = cloneref(game:GetService("RunService"))
 local TextService    = cloneref(game:GetService("TextService"))
 local HttpService    = cloneref(game:GetService("HttpService"))
 
-local CoreGui = (gethui and gethui()) or game:GetService("CoreGui")
+-- Anti-detection: do NOT use gethui(). Anti-cheats scan the executor's hidden
+-- gethui container for exploit UIs. Parenting to the real CoreGui (or PlayerGui)
+-- blends in with normal game UI and avoids that scan.
+local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+
+-- Anti-detection: ScreenGuis must not carry identifiable names. Anti-cheats
+-- scan CoreGui children for known library names, so every ScreenGui this
+-- library parents to CoreGui gets a randomized, system-looking name instead.
+local _SAFE_GUI_POOL = {
+    "CoreEffects","BubbleChat","TopbarPlus","EmoteWheel","SettingsHud",
+    "CaptureUi","BackpackHud","ChatWindow","NotificationHud","PlayerHud",
+}
+local function _SafeGuiName()
+    return _SAFE_GUI_POOL[math.random(1, #_SAFE_GUI_POOL)]
+        .. tostring(math.random(1000, 9999))
+end
 
 ----------------------------------------------------------------
 -- LIBRARY ROOT
@@ -1621,7 +1636,7 @@ local NotifHolder
 
 function Hyperion:_InitNotifications(parent)
     NotifHolder = Util.Create("Frame", {
-        Name = "HyperionNotifs",
+        Name = _SafeGuiName(),
         BackgroundTransparency = 1,
         Size = UDim2.new(0, 240, 1, 0),
         Position = UDim2.new(1, -252, 0, 0),
@@ -2024,11 +2039,11 @@ function Hyperion:CreateWindow(config)
 
     -- ScreenGui
     local ScreenGui = Util.Create("ScreenGui", {
-        Name = "Hyperion_" .. HttpService:GenerateGUID(false):sub(1, 8),
+        Name = _SafeGuiName(),
         ResetOnSpawn    = false,
         ZIndexBehavior  = Enum.ZIndexBehavior.Sibling,
-        DisplayOrder    = 999,
-        IgnoreGuiInset  = true,
+        DisplayOrder    = 0,
+        IgnoreGuiInset  = false,
     })
     pcall(protect_gui, ScreenGui)
     ScreenGui.Parent = CoreGui
@@ -5613,7 +5628,7 @@ function Hyperion:CreateWindow(config)
                     BackgroundTransparency = 1,
                     Size = UDim2.new(0.35, 0, 1, 0),
                     Position = UDim2.new(0.65, 0, 0, 0),
-                    Text = tostring(value) .. suffix,
+                    Text = string.format("%.10g", value) .. suffix,
                     TextColor3 = Theme.Accent,
                     FontFace = Theme.FontMedium,
                     TextSize = 12,
@@ -5704,7 +5719,7 @@ function Hyperion:CreateWindow(config)
                     local rawVal = min + (max - min) * pos
                     value = math.clamp(math.floor(rawVal / round + 0.5) * round, min, max)
                     if flag then Hyperion.Flags[flag] = value end
-                    ValLabel.Text = tostring(value) .. suffix
+                    ValLabel.Text = string.format("%.10g", value) .. suffix
                     local r = (value - min) / math.max(max - min, 0.001)
                     Fill.Size = UDim2.new(r, 0, 1, 0)
                     KnobObj.Position = UDim2.new(r, 0, 0.5, 0)
@@ -5736,7 +5751,7 @@ function Hyperion:CreateWindow(config)
                     Hyperion.FlagCallbacks[flag] = function(v)
                         value = math.clamp(v, min, max)
                         Hyperion.Flags[flag] = value
-                        ValLabel.Text = tostring(value) .. suffix
+                        ValLabel.Text = string.format("%.10g", value) .. suffix
                         local r = (value - min) / math.max(max - min, 0.001)
                         Fill.Size = UDim2.new(r, 0, 1, 0)
                         KnobObj.Position = UDim2.new(r, 0, 0.5, 0)
@@ -5745,7 +5760,7 @@ function Hyperion:CreateWindow(config)
                 end
 
                 local API = {}
-                function API:Set(v) value = math.clamp(v, min, max); if flag then Hyperion.Flags[flag] = value end; ValLabel.Text = tostring(value) .. suffix; local r = (value - min) / math.max(max - min, 0.001); Fill.Size = UDim2.new(r, 0, 1, 0); KnobObj.Position = UDim2.new(r, 0, 0.5, 0); task.spawn(callback, value) end
+                function API:Set(v) value = math.clamp(v, min, max); if flag then Hyperion.Flags[flag] = value end; ValLabel.Text = string.format("%.10g", value) .. suffix; local r = (value - min) / math.max(max - min, 0.001); Fill.Size = UDim2.new(r, 0, 1, 0); KnobObj.Position = UDim2.new(r, 0, 0.5, 0); task.spawn(callback, value) end
                 function API:Get() return value end
                 return API
             end
@@ -5925,19 +5940,19 @@ function Hyperion:CreateWindow(config)
                 })
                 Themed(DropText, { TextColor3 = function(t) return t.TextDim end })
 
-                local Arrow = Util.Create("TextLabel", {
+                local Arrow = Util.Create("ImageLabel", {
                     Name = "Arrow",
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(0, 20, 1, 0),
-                    Position = UDim2.new(1, -24, 0, 0),
-                    Text = "▾",
-                    TextColor3 = Theme.TextMuted,
-                    FontFace = Theme.Font,
-                    TextSize = 14,
+                    Size = UDim2.new(0, 12, 0, 12),
+                    Position = UDim2.new(1, -20, 0.5, 0),
+                    AnchorPoint = Vector2.new(0, 0.5),
+                    Image = "rbxassetid://134387593103194",
+                    ImageColor3 = Theme.TextMuted,
+                    ScaleType = Enum.ScaleType.Fit,
                     ZIndex = 3,
                     Parent = DropBtn
                 })
-                Themed(Arrow, { TextColor3 = function(t) return opened and t.Accent or t.TextMuted end })
+                Themed(Arrow, { ImageColor3 = function(t) return opened and t.Accent or t.TextMuted end })
 
                 -- Options panel
                 local OptsFrame = Util.Create("ScrollingFrame", {
@@ -6045,7 +6060,7 @@ function Hyperion:CreateWindow(config)
                                 OptsFrame.Visible = false
                                 Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                                 Util.TweenFast(dropStroke, {Color = Theme.Border})
-                                Arrow.Text = "▾"
+                                Arrow.Image = "rbxassetid://134387593103194"
                             end
                             if flag then Hyperion.Flags[flag] = selected end
                             DropText.Text = GetDisplay()
@@ -6069,12 +6084,12 @@ function Hyperion:CreateWindow(config)
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, optH)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58 + optH + 4)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Accent})
-                        Arrow.Text = "▴"
+                        Arrow.Image = "rbxassetid://95689861013321"
                     else
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, 0)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Border})
-                        Arrow.Text = "▾"
+                        Arrow.Image = "rbxassetid://134387593103194"
                         task.delay(0.3, function()
                             if not opened then OptsFrame.Visible = false end
                         end)
@@ -7140,11 +7155,11 @@ function Hyperion:CreateWatermark(cfg)
 
     -- Find or create a ScreenGui to host the watermark
     local WmGui = Util.Create("ScreenGui", {
-        Name           = "HyperionWatermark",
+        Name           = _SafeGuiName(),
         ResetOnSpawn   = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        DisplayOrder   = 1000,
-        IgnoreGuiInset = true,
+        DisplayOrder   = 0,
+        IgnoreGuiInset = false,
     })
     pcall(protect_gui, WmGui)
     WmGui.Parent = CoreGui
