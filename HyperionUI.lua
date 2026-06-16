@@ -6061,6 +6061,7 @@ function Hyperion:CreateWindow(config)
                                 Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                                 Util.TweenFast(dropStroke, {Color = Theme.Border})
                                 Arrow.Image = "rbxassetid://134387593103194"
+                        Arrow.ImageColor3 = Hyperion.Theme.TextMuted
                             end
                             if flag then Hyperion.Flags[flag] = selected end
                             DropText.Text = GetDisplay()
@@ -6085,11 +6086,13 @@ function Hyperion:CreateWindow(config)
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58 + optH + 4)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Accent})
                         Arrow.Image = "rbxassetid://95689861013321"
+                        Arrow.ImageColor3 = Hyperion.Theme.Accent
                     else
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, 0)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Border})
                         Arrow.Image = "rbxassetid://134387593103194"
+                        Arrow.ImageColor3 = Hyperion.Theme.TextMuted
                         task.delay(0.3, function()
                             if not opened then OptsFrame.Visible = false end
                         end)
@@ -7227,6 +7230,7 @@ function Hyperion:CreateWatermark(cfg)
     Util.AddCorner(WmDot, UDim.new(1, 0))
 
     local fpsColorOverride = nil
+    local WmExpiresLbl = nil
     Hyperion:OnThemeChanged(function(t)
         if not WmFrame or not WmFrame.Parent then return end
         WmFrame.BackgroundColor3 = t.Surface
@@ -7339,7 +7343,6 @@ function Hyperion:CreateWatermark(cfg)
     })
 
     -- Optional Expires label
-    local WmExpiresLbl = nil
     if wmExpires then
         Util.Create("TextLabel", {
             Name              = "Sep3",
