@@ -7452,5 +7452,196 @@ function Hyperion:CreateWatermark(cfg)
 end
 
 ----------------------------------------------------------------
+-- KEYBIND LIST OVERLAY
+----------------------------------------------------------------
+--[[
+    Hyperion:CreateKeybindList({
+        Title    = "Keybinds",           -- optional header text
+        Position = UDim2.new(...),       -- default: bottom-left
+        Keybinds = {
+            { Name = "Hide UI",   Key = Enum.KeyCode.RightShift },
+            { Name = "Toggle ESP", Key = Enum.KeyCode.G },
+        },
+    })
+    Returns API:
+        :SetVisible(bool)
+        :AddKeybind(name, keyCode)
+        :UpdateKeybind(name, keyCode)
+        :Destroy()
+--]]
+function Hyperion:CreateKeybindList(cfg)
+    cfg = cfg or {}
+    local title    = cfg.Title    or "Keybinds"
+    local position = cfg.Position or UDim2.new(0, 16, 1, -16)
+    local keybinds = cfg.Keybinds or {}
+    local Theme    = Hyperion.Theme
+
+    local KbGui = Util.Create("ScreenGui", {
+        Name           = _SafeGuiName(),
+        ResetOnSpawn   = false,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+        DisplayOrder   = 0,
+        IgnoreGuiInset = true,
+    })
+    pcall(protect_gui, KbGui)
+    KbGui.Parent = CoreGui
+
+    local KbFrame = Util.Create("Frame", {
+        Name                   = "KeybindList",
+        BackgroundColor3       = Theme.Surface,
+        BackgroundTransparency = 0.08,
+        AnchorPoint            = Vector2.new(0, 1),
+        Position               = position,
+        Size                   = UDim2.new(0, 180, 0, 0),
+        AutomaticSize          = Enum.AutomaticSize.Y,
+        BorderSizePixel        = 0,
+        ZIndex                 = 10,
+        Parent                 = KbGui,
+    })
+    Util.AddCorner(KbFrame, UDim.new(0, 8))
+    local KbStroke = Util.AddStroke(KbFrame, Theme.BorderLight, 1, 0.2)
+
+    local KbAccentBar = Util.Create("Frame", {
+        BackgroundColor3       = Theme.Accent,
+        BackgroundTransparency = 0.6,
+        Size                   = UDim2.new(1, 0, 0, 1),
+        BorderSizePixel        = 0,
+        ZIndex                 = 11,
+        Parent                 = KbFrame,
+    })
+
+    local KbInner = Util.Create("Frame", {
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 0, 0),
+        AutomaticSize          = Enum.AutomaticSize.Y,
+        ZIndex                 = 11,
+        Parent                 = KbFrame,
+    })
+    Util.AddList(KbInner, Enum.FillDirection.Vertical, 4)
+    Util.AddPadding(KbInner, 8, 10, 8, 10)
+
+    local KbTitle = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Size                   = UDim2.new(1, 0, 0, 14),
+        Text                   = string.upper(title),
+        TextColor3             = Theme.Accent,
+        FontFace               = Theme.FontBold,
+        TextSize               = 10,
+        TextXAlignment         = Enum.TextXAlignment.Left,
+        ZIndex                 = 12,
+        Parent                 = KbInner,
+    })
+
+    Util.Create("Frame", {
+        BackgroundColor3       = Theme.Border,
+        BackgroundTransparency = 0.4,
+        Size                   = UDim2.new(1, 0, 0, 1),
+        BorderSizePixel        = 0,
+        ZIndex                 = 12,
+        Parent                 = KbInner,
+    })
+
+    local rowRefs = {}
+
+    local function KeyName(key)
+        if not key or key == Enum.KeyCode.Unknown then return "—" end
+        return tostring(key):gsub("Enum%.KeyCode%.", "")
+    end
+
+    local function AddRow(name, key)
+        local Row = Util.Create("Frame", {
+            Name                   = "Row_" .. name,
+            BackgroundTransparency = 1,
+            Size                   = UDim2.new(1, 0, 0, 16),
+            ZIndex                 = 12,
+            Parent                 = KbInner,
+        })
+
+        Util.Create("TextLabel", {
+            BackgroundTransparency = 1,
+            Size                   = UDim2.new(0.6, 0, 1, 0),
+            Text                   = name,
+            TextColor3             = Theme.TextDim,
+            FontFace               = Theme.Font,
+            TextSize               = 11,
+            TextXAlignment         = Enum.TextXAlignment.Left,
+            ZIndex                 = 13,
+            Parent                 = Row,
+        })
+
+        local KeyLbl = Util.Create("TextLabel", {
+            Name                   = "Key",
+            BackgroundTransparency = 1,
+            Size                   = UDim2.new(0.4, 0, 1, 0),
+            Position               = UDim2.new(0.6, 0, 0, 0),
+            Text                   = KeyName(key),
+            TextColor3             = Theme.Accent,
+            FontFace               = Theme.FontSemiBold,
+            TextSize               = 11,
+            TextXAlignment         = Enum.TextXAlignment.Right,
+            ZIndex                 = 13,
+            Parent                 = Row,
+        })
+
+        rowRefs[name] = { Row = Row, KeyLbl = KeyLbl }
+        return KeyLbl
+    end
+
+    for _, kb in ipairs(keybinds) do
+        AddRow(kb.Name, kb.Key)
+    end
+
+    Hyperion:OnThemeChanged(function(t)
+        if not KbFrame or not KbFrame.Parent then return end
+        KbFrame.BackgroundColor3 = t.Surface
+        KbStroke.Color           = t.BorderLight
+        KbAccentBar.BackgroundColor3 = t.Accent
+        KbTitle.TextColor3       = t.Accent
+        for _, ref in pairs(rowRefs) do
+            local nameLbl = ref.Row:GetChildren()[1]
+            if nameLbl then nameLbl.TextColor3 = t.TextDim end
+            ref.KeyLbl.TextColor3 = t.Accent
+        end
+    end)
+
+    local drag, dragStart, startPos = false, Vector3.new(), UDim2.new()
+    KbFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            drag = true; dragStart = input.Position; startPos = KbFrame.Position
+        end
+    end)
+    KbFrame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
+    end)
+    Util.Connect(UserInputService.InputChanged, function(input)
+        if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local d = input.Position - dragStart
+            KbFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+        end
+    end)
+
+    local API = {}
+
+    function API:SetVisible(v)
+        KbFrame.Visible = v
+    end
+
+    function API:AddKeybind(name, key)
+        AddRow(name, key)
+    end
+
+    function API:UpdateKeybind(name, key)
+        local ref = rowRefs[name]
+        if ref then ref.KeyLbl.Text = KeyName(key) end
+    end
+
+    function API:Destroy()
+        KbGui:Destroy()
+    end
+
+    return API
+end
+
+----------------------------------------------------------------
 
 return Hyperion
