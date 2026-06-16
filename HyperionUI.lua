@@ -5055,6 +5055,7 @@ function Hyperion:CreateWindow(config)
             ZIndex = 3,
             Parent = TabPage
         })
+        Util.AddCorner(GroupBar, Theme.CornerSmall)
         local GroupBarStroke = Util.AddStroke(GroupBar, Theme.BorderLight, 1.2, 0.08)
         Themed(GroupBar, { BackgroundColor3 = function(t) return t.Surface end })
         Themed(GroupBarStroke, { Color = function(t) return t.BorderLight end })
@@ -6060,7 +6061,6 @@ function Hyperion:CreateWindow(config)
                                 Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                                 Util.TweenFast(dropStroke, {Color = Theme.Border})
                                 Arrow.Image = "rbxassetid://134387593103194"
-                        Arrow.ImageColor3 = Hyperion.Theme.TextMuted
                             end
                             if flag then Hyperion.Flags[flag] = selected end
                             DropText.Text = GetDisplay()
@@ -6085,13 +6085,11 @@ function Hyperion:CreateWindow(config)
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58 + optH + 4)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Accent})
                         Arrow.Image = "rbxassetid://95689861013321"
-                        Arrow.ImageColor3 = Hyperion.Theme.Accent
                     else
                         Util.TweenSmooth(OptsFrame, {Size = UDim2.new(1, 0, 0, 0)})
                         Util.TweenSmooth(Frame, {Size = UDim2.new(1, 0, 0, 58)})
                         Util.TweenFast(dropStroke, {Color = Hyperion.Theme.Border})
                         Arrow.Image = "rbxassetid://134387593103194"
-                        Arrow.ImageColor3 = Hyperion.Theme.TextMuted
                         task.delay(0.3, function()
                             if not opened then OptsFrame.Visible = false end
                         end)
@@ -7229,7 +7227,6 @@ function Hyperion:CreateWatermark(cfg)
     Util.AddCorner(WmDot, UDim.new(1, 0))
 
     local fpsColorOverride = nil
-    local WmExpiresLbl = nil
     Hyperion:OnThemeChanged(function(t)
         if not WmFrame or not WmFrame.Parent then return end
         WmFrame.BackgroundColor3 = t.Surface
@@ -7342,6 +7339,7 @@ function Hyperion:CreateWatermark(cfg)
     })
 
     -- Optional Expires label
+    local WmExpiresLbl = nil
     if wmExpires then
         Util.Create("TextLabel", {
             Name              = "Sep3",
@@ -7448,234 +7446,6 @@ function Hyperion:CreateWatermark(cfg)
     end
 
     return WatermarkAPI
-end
-
-----------------------------------------------------------------
--- KEYBIND LIST OVERLAY
-----------------------------------------------------------------
---[[
-    Hyperion:CreateKeybindList({
-        Title    = "Keybinds",           -- optional header text
-        Position = UDim2.new(...),       -- default: bottom-left
-        Keybinds = {
-            { Name = "Hide UI",   Key = Enum.KeyCode.RightShift },
-            { Name = "Toggle ESP", Key = Enum.KeyCode.G },
-        },
-    })
-    Returns API:
-        :SetVisible(bool)
-        :AddKeybind(name, keyCode)
-        :UpdateKeybind(name, keyCode)
-        :Destroy()
---]]
-function Hyperion:CreateKeybindList(cfg)
-    cfg = cfg or {}
-    local title    = cfg.Title    or "Keybinds"
-    local position = cfg.Position or UDim2.new(0, 16, 0.5, 0)
-    local keybinds = cfg.Keybinds or {}
-    local Theme    = Hyperion.Theme
-
-    local KbGui = Util.Create("ScreenGui", {
-        Name           = _SafeGuiName(),
-        ResetOnSpawn   = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        DisplayOrder   = 0,
-        IgnoreGuiInset = true,
-    })
-    pcall(protect_gui, KbGui)
-    KbGui.Parent = CoreGui
-
-    local KbFrame = Util.Create("Frame", {
-        Name                   = "KeybindList",
-        BackgroundColor3       = Theme.Background,
-        BackgroundTransparency = 0.04,
-        AnchorPoint            = Vector2.new(0, 0.5),
-        Position               = position,
-        Size                   = UDim2.new(0, 180, 0, 0),
-        AutomaticSize          = Enum.AutomaticSize.Y,
-        BorderSizePixel        = 0,
-        ZIndex                 = 10,
-        Parent                 = KbGui,
-    })
-    local KbStroke = Util.AddStroke(KbFrame, Theme.BorderLight, 1, 0.15)
-
-    -- Gradient accent bar across the top
-    local KbAccentBar = Util.Create("Frame", {
-        BackgroundColor3 = Color3.new(1, 1, 1),
-        Size             = UDim2.new(1, 0, 0, 2),
-        BorderSizePixel  = 0,
-        ZIndex           = 12,
-        Parent           = KbFrame,
-    })
-    local KbAccentGrad = Util.Create("UIGradient", {
-        Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   Theme.AccentDark),
-            ColorSequenceKeypoint.new(0.5, Theme.AccentLight),
-            ColorSequenceKeypoint.new(1,   Theme.AccentDark),
-        }),
-        Parent = KbAccentBar,
-    })
-
-    -- Left accent stripe
-    local KbStripe = Util.Create("Frame", {
-        BackgroundColor3       = Theme.Accent,
-        BackgroundTransparency = 0.4,
-        Size                   = UDim2.new(0, 2, 1, 0),
-        BorderSizePixel        = 0,
-        ZIndex                 = 12,
-        Parent                 = KbFrame,
-    })
-
-    local KbInner = Util.Create("Frame", {
-        BackgroundTransparency = 1,
-        Size                   = UDim2.new(1, -2, 0, 0),
-        Position               = UDim2.new(0, 2, 0, 0),
-        AutomaticSize          = Enum.AutomaticSize.Y,
-        ZIndex                 = 11,
-        Parent                 = KbFrame,
-    })
-    Util.AddList(KbInner, Enum.FillDirection.Vertical, 4)
-    Util.AddPadding(KbInner, 6, 10, 6, 10)
-
-    local KbHeader = Util.Create("Frame", {
-        BackgroundTransparency = 1,
-        Size                   = UDim2.new(1, 0, 0, 14),
-        ZIndex                 = 12,
-        Parent                 = KbInner,
-    })
-
-    local KbTitle = Util.Create("TextLabel", {
-        BackgroundTransparency = 1,
-        Size                   = UDim2.new(1, 0, 1, 0),
-        Text                   = string.upper(title),
-        TextColor3             = Theme.Accent,
-        FontFace               = Theme.FontBold,
-        TextSize               = 10,
-        TextXAlignment         = Enum.TextXAlignment.Left,
-        ZIndex                 = 13,
-        Parent                 = KbHeader,
-    })
-
-    local KbDivider = Util.Create("Frame", {
-        BackgroundColor3       = Theme.Border,
-        BackgroundTransparency = 0.3,
-        Size                   = UDim2.new(1, 0, 0, 1),
-        BorderSizePixel        = 0,
-        ZIndex                 = 12,
-        Parent                 = KbInner,
-    })
-
-    local rowRefs = {}
-    local nameLbls = {}
-
-    local function KeyName(key)
-        if not key or key == Enum.KeyCode.Unknown then return "—" end
-        return tostring(key):gsub("Enum%.KeyCode%.", "")
-    end
-
-    local function AddRow(name, key)
-        local Row = Util.Create("Frame", {
-            Name                   = "Row_" .. name,
-            BackgroundColor3       = Theme.SurfaceLight,
-            BackgroundTransparency = 0.6,
-            Size                   = UDim2.new(1, 0, 0, 18),
-            BorderSizePixel        = 0,
-            ZIndex                 = 12,
-            Parent                 = KbInner,
-        })
-        Util.AddPadding(Row, 0, 8, 0, 8)
-
-        local NameLbl = Util.Create("TextLabel", {
-            BackgroundTransparency = 1,
-            Size                   = UDim2.new(0.58, 0, 1, 0),
-            Text                   = name,
-            TextColor3             = Theme.Text,
-            FontFace               = Theme.Font,
-            TextSize               = 11,
-            TextXAlignment         = Enum.TextXAlignment.Left,
-            ZIndex                 = 13,
-            Parent                 = Row,
-        })
-
-        local KeyLbl = Util.Create("TextLabel", {
-            Name                   = "Key",
-            BackgroundTransparency = 1,
-            Size                   = UDim2.new(0.42, 0, 1, 0),
-            Position               = UDim2.new(0.58, 0, 0, 0),
-            Text                   = KeyName(key),
-            TextColor3             = Theme.Accent,
-            FontFace               = Theme.FontSemiBold,
-            TextSize               = 11,
-            TextXAlignment         = Enum.TextXAlignment.Right,
-            ZIndex                 = 13,
-            Parent                 = Row,
-        })
-
-        rowRefs[name]  = { Row = Row, KeyLbl = KeyLbl }
-        nameLbls[name] = NameLbl
-        return KeyLbl
-    end
-
-    for _, kb in ipairs(keybinds) do
-        AddRow(kb.Name, kb.Key)
-    end
-
-    Hyperion:OnThemeChanged(function(t)
-        if not KbFrame or not KbFrame.Parent then return end
-        Util.TweenFast(KbFrame,   { BackgroundColor3 = t.Background })
-        Util.TweenFast(KbStroke,  { Color = t.BorderLight })
-        Util.TweenFast(KbStripe,  { BackgroundColor3 = t.Accent })
-        Util.TweenFast(KbTitle,   { TextColor3 = t.Accent })
-        Util.TweenFast(KbDivider, { BackgroundColor3 = t.Border })
-        KbAccentGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0,   t.AccentDark),
-            ColorSequenceKeypoint.new(0.5, t.AccentLight),
-            ColorSequenceKeypoint.new(1,   t.AccentDark),
-        })
-        for name, ref in pairs(rowRefs) do
-            Util.TweenFast(ref.Row,    { BackgroundColor3 = t.SurfaceLight })
-            Util.TweenFast(ref.KeyLbl, { TextColor3 = t.Accent })
-            local nl = nameLbls[name]
-            if nl then Util.TweenFast(nl, { TextColor3 = t.Text }) end
-        end
-    end)
-
-    local drag, dragStart, startPos = false, Vector3.new(), UDim2.new()
-    KbFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            drag = true; dragStart = input.Position; startPos = KbFrame.Position
-        end
-    end)
-    KbFrame.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then drag = false end
-    end)
-    Util.Connect(UserInputService.InputChanged, function(input)
-        if drag and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local d = input.Position - dragStart
-            KbFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
-        end
-    end)
-
-    local API = {}
-
-    function API:SetVisible(v)
-        KbFrame.Visible = v
-    end
-
-    function API:AddKeybind(name, key)
-        AddRow(name, key)
-    end
-
-    function API:UpdateKeybind(name, key)
-        local ref = rowRefs[name]
-        if ref then ref.KeyLbl.Text = KeyName(key) end
-    end
-
-    function API:Destroy()
-        KbGui:Destroy()
-    end
-
-    return API
 end
 
 ----------------------------------------------------------------
