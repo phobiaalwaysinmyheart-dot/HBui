@@ -2043,7 +2043,7 @@ function Hyperion:CreateWindow(config)
         ResetOnSpawn    = false,
         ZIndexBehavior  = Enum.ZIndexBehavior.Sibling,
         DisplayOrder    = 0,
-        IgnoreGuiInset  = false,
+        IgnoreGuiInset  = true,
     })
     pcall(protect_gui, ScreenGui)
     ScreenGui.Parent = CoreGui
@@ -5943,8 +5943,8 @@ function Hyperion:CreateWindow(config)
                 local Arrow = Util.Create("ImageLabel", {
                     Name = "Arrow",
                     BackgroundTransparency = 1,
-                    Size = UDim2.new(0, 12, 0, 12),
-                    Position = UDim2.new(1, -20, 0.5, 0),
+                    Size = UDim2.new(0, 16, 0, 16),
+                    Position = UDim2.new(1, -22, 0.5, 0),
                     AnchorPoint = Vector2.new(0, 0.5),
                     Image = "rbxassetid://134387593103194",
                     ImageColor3 = Theme.TextMuted,
