@@ -6663,14 +6663,22 @@ function Hyperion:CreateWindow(config)
                 cfg = cfg or {}
                 local callback = cfg.Callback or function() end
 
-                local themeOrder  = {"Purple", "Midnight", "Rose", "StarryNight", "Aurora", "Nebula"}
+                local themeOrder  = {"Purple","Midnight","Rose","StarryNight","Aurora","Nebula","Sunset","Ocean","Crimson","Sakura","Vaporwave","Love","Christmas","Neko"}
                 local themeAccents = {
-                    Purple      = Color3.fromRGB(140, 80, 220),
-                    Midnight    = Color3.fromRGB(80, 120, 255),
-                    Rose        = Color3.fromRGB(220, 80, 120),
-                    StarryNight = Color3.fromRGB(80, 200, 240),
-                    Aurora      = Color3.fromRGB(60, 220, 160),
+                    Purple      = Color3.fromRGB(140, 80,  220),
+                    Midnight    = Color3.fromRGB(80,  120, 255),
+                    Rose        = Color3.fromRGB(220, 80,  120),
+                    StarryNight = Color3.fromRGB(80,  200, 240),
+                    Aurora      = Color3.fromRGB(60,  220, 160),
                     Nebula      = Color3.fromRGB(255, 100, 180),
+                    Sunset      = Color3.fromRGB(245, 150, 50),
+                    Ocean       = Color3.fromRGB(40,  160, 220),
+                    Crimson     = Color3.fromRGB(200, 40,  50),
+                    Sakura      = Color3.fromRGB(235, 120, 160),
+                    Vaporwave   = Color3.fromRGB(255, 95,  205),
+                    Love        = Color3.fromRGB(255, 70,  115),
+                    Christmas   = Color3.fromRGB(140, 210, 255),
+                    Neko        = Color3.fromRGB(255, 130, 180),
                 }
 
                 local currentTheme = "Purple"
