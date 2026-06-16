@@ -7158,6 +7158,7 @@ function Hyperion:CreateWatermark(cfg)
     cfg = cfg or {}
     local wmTitle   = cfg.Title or "Hyperion"
     local wmGame    = cfg.Game or game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Unknown"
+    local wmExpires = cfg.Expires or nil
     local wmKeybind = cfg.Keybind or nil
     local Theme     = Hyperion.Theme
 
@@ -7244,6 +7245,11 @@ function Hyperion:CreateWatermark(cfg)
         else
             WmFpsLbl.TextColor3 = t.Accent
         end
+        if WmExpiresLbl then
+            WmExpiresLbl.TextColor3 = t.Accent
+        end
+        local sep3 = WmRow:FindFirstChild("Sep3")
+        if sep3 then sep3.TextColor3 = t.TextMuted end
     end)
 
     -- Spacer after dot
@@ -7331,6 +7337,38 @@ function Hyperion:CreateWatermark(cfg)
         ZIndex            = 12,
         Parent            = WmRow,
     })
+
+    -- Optional Expires label
+    local WmExpiresLbl = nil
+    if wmExpires then
+        Util.Create("TextLabel", {
+            Name              = "Sep3",
+            BackgroundTransparency = 1,
+            Size              = UDim2.new(0, 0, 1, 0),
+            AutomaticSize     = Enum.AutomaticSize.X,
+            Text              = "  |  ",
+            TextColor3        = Theme.TextMuted,
+            FontFace          = Theme.Font,
+            TextSize          = 12,
+            LayoutOrder       = 8,
+            ZIndex            = 12,
+            Parent            = WmRow,
+        })
+        WmExpiresLbl = Util.Create("TextLabel", {
+            Name              = "Expires",
+            BackgroundTransparency = 1,
+            Size              = UDim2.new(0, 0, 1, 0),
+            AutomaticSize     = Enum.AutomaticSize.X,
+            Text              = "Expires: " .. wmExpires,
+            TextColor3        = Theme.Accent,
+            FontFace          = Theme.FontMedium,
+            TextSize          = 12,
+            TextXAlignment    = Enum.TextXAlignment.Left,
+            LayoutOrder       = 9,
+            ZIndex            = 12,
+            Parent            = WmRow,
+        })
+    end
 
     -- FPS counter using RunService
     local fpsBuffer = {}
