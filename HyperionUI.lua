@@ -1977,7 +1977,7 @@ function Hyperion:CreateWindow(config)
     config = config or {}
     local windowConfig = {
         Title    = config.Title or "Hyperion",
-        Logo     = config.Logo or "rbxassetid://74070104523360",
+        Logo     = config.Logo or "rbxassetid://134963728913547",
         Size     = config.Size or UDim2.new(0, 880, 0, 600),
         Keybind  = config.Keybind or Enum.KeyCode.RightControl,
         Theme    = config.Theme or {},
