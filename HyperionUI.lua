@@ -7472,7 +7472,7 @@ end
 function Hyperion:CreateKeybindList(cfg)
     cfg = cfg or {}
     local title    = cfg.Title    or "Keybinds"
-    local position = cfg.Position or UDim2.new(0, 16, 1, -16)
+    local position = cfg.Position or UDim2.new(0, 16, 0.5, 0)
     local keybinds = cfg.Keybinds or {}
     local Theme    = Hyperion.Theme
 
@@ -7490,9 +7490,9 @@ function Hyperion:CreateKeybindList(cfg)
         Name                   = "KeybindList",
         BackgroundColor3       = Theme.Background,
         BackgroundTransparency = 0.04,
-        AnchorPoint            = Vector2.new(0, 1),
+        AnchorPoint            = Vector2.new(0, 0.5),
         Position               = position,
-        Size                   = UDim2.new(0, 240, 0, 0),
+        Size                   = UDim2.new(0, 180, 0, 0),
         AutomaticSize          = Enum.AutomaticSize.Y,
         BorderSizePixel        = 0,
         ZIndex                 = 10,
@@ -7535,36 +7535,23 @@ function Hyperion:CreateKeybindList(cfg)
         ZIndex                 = 11,
         Parent                 = KbFrame,
     })
-    Util.AddList(KbInner, Enum.FillDirection.Vertical, 5)
-    Util.AddPadding(KbInner, 8, 12, 8, 12)
+    Util.AddList(KbInner, Enum.FillDirection.Vertical, 4)
+    Util.AddPadding(KbInner, 6, 10, 6, 10)
 
-    -- Header row with dot + title
     local KbHeader = Util.Create("Frame", {
         BackgroundTransparency = 1,
-        Size                   = UDim2.new(1, 0, 0, 16),
+        Size                   = UDim2.new(1, 0, 0, 14),
         ZIndex                 = 12,
         Parent                 = KbInner,
     })
 
-    local KbDot = Util.Create("Frame", {
-        BackgroundColor3 = Theme.Accent,
-        Size             = UDim2.new(0, 5, 0, 5),
-        Position         = UDim2.new(0, 0, 0.5, 0),
-        AnchorPoint      = Vector2.new(0, 0.5),
-        BorderSizePixel  = 0,
-        ZIndex           = 13,
-        Parent           = KbHeader,
-    })
-    Util.AddCorner(KbDot, UDim.new(1, 0))
-
     local KbTitle = Util.Create("TextLabel", {
         BackgroundTransparency = 1,
-        Size                   = UDim2.new(1, -12, 1, 0),
-        Position               = UDim2.new(0, 12, 0, 0),
+        Size                   = UDim2.new(1, 0, 1, 0),
         Text                   = string.upper(title),
         TextColor3             = Theme.Accent,
         FontFace               = Theme.FontBold,
-        TextSize               = 11,
+        TextSize               = 10,
         TextXAlignment         = Enum.TextXAlignment.Left,
         ZIndex                 = 13,
         Parent                 = KbHeader,
@@ -7592,7 +7579,7 @@ function Hyperion:CreateKeybindList(cfg)
             Name                   = "Row_" .. name,
             BackgroundColor3       = Theme.SurfaceLight,
             BackgroundTransparency = 0.6,
-            Size                   = UDim2.new(1, 0, 0, 22),
+            Size                   = UDim2.new(1, 0, 0, 18),
             BorderSizePixel        = 0,
             ZIndex                 = 12,
             Parent                 = KbInner,
@@ -7605,7 +7592,7 @@ function Hyperion:CreateKeybindList(cfg)
             Text                   = name,
             TextColor3             = Theme.Text,
             FontFace               = Theme.Font,
-            TextSize               = 13,
+            TextSize               = 11,
             TextXAlignment         = Enum.TextXAlignment.Left,
             ZIndex                 = 13,
             Parent                 = Row,
@@ -7619,7 +7606,7 @@ function Hyperion:CreateKeybindList(cfg)
             Text                   = KeyName(key),
             TextColor3             = Theme.Accent,
             FontFace               = Theme.FontSemiBold,
-            TextSize               = 13,
+            TextSize               = 11,
             TextXAlignment         = Enum.TextXAlignment.Right,
             ZIndex                 = 13,
             Parent                 = Row,
@@ -7639,7 +7626,6 @@ function Hyperion:CreateKeybindList(cfg)
         Util.TweenFast(KbFrame,   { BackgroundColor3 = t.Background })
         Util.TweenFast(KbStroke,  { Color = t.BorderLight })
         Util.TweenFast(KbStripe,  { BackgroundColor3 = t.Accent })
-        Util.TweenFast(KbDot,     { BackgroundColor3 = t.Accent })
         Util.TweenFast(KbTitle,   { TextColor3 = t.Accent })
         Util.TweenFast(KbDivider, { BackgroundColor3 = t.Border })
         KbAccentGrad.Color = ColorSequence.new({
