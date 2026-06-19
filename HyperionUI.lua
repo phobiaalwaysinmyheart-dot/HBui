@@ -4517,22 +4517,10 @@ function Hyperion:CreateWindow(config)
         Parent   = PersonaBar,
     })
     Util.AddCorner(PersonaBtn, Theme.CornerSmall)
-    Util.AddPadding(PersonaBtn, 0, 9, 0, 28)
+    Util.AddPadding(PersonaBtn, 0, 24, 0, 10)
     local _pbStroke = Util.AddStroke(PersonaBtn, Theme.Border, 1, 0.4)
     Themed(PersonaBtn, { BackgroundColor3 = function(t) return t.SurfaceLight end, TextColor3 = function(t) return t.Text end })
     Themed(_pbStroke, { Color = function(t) return t.Border end })
-    local PersonaIcon = Util.Create("ImageLabel", {
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 8, 0.5, 0),
-        AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(0, 14, 0, 14),
-        Image = Hyperion.Lucide.User,
-        ImageColor3 = Theme.Accent,
-        ScaleType = Enum.ScaleType.Fit,
-        ZIndex = 54,
-        Parent = PersonaBtn,
-    })
-    Themed(PersonaIcon, { ImageColor3 = function(t) return t.Accent end })
     local PersonaArrow = Util.Create("ImageLabel", {
         BackgroundTransparency = 1,
         Position = UDim2.new(1, -20, 0.5, 0),
