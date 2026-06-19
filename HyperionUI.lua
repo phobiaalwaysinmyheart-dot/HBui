@@ -4533,19 +4533,18 @@ function Hyperion:CreateWindow(config)
         Parent = PersonaBtn,
     })
     Themed(PersonaIcon, { ImageColor3 = function(t) return t.Accent end })
-    local PersonaArrow = Util.Create("TextLabel", {
+    local PersonaArrow = Util.Create("ImageLabel", {
         BackgroundTransparency = 1,
-        Position = UDim2.new(1, -16, 0.5, 0),
+        Position = UDim2.new(1, -20, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        Size = UDim2.new(0, 12, 0, 12),
-        Text = "▾",
-        TextColor3 = Theme.TextMuted,
-        FontFace = Theme.Font,
-        TextSize = 11,
+        Size = UDim2.new(0, 14, 0, 14),
+        Image = "rbxassetid://134387593103194",
+        ImageColor3 = Theme.TextMuted,
+        ScaleType = Enum.ScaleType.Fit,
         ZIndex = 54,
         Parent = PersonaBtn,
     })
-    Themed(PersonaArrow, { TextColor3 = function(t) return t.TextMuted end })
+    Themed(PersonaArrow, { ImageColor3 = function(t) return t.TextMuted end })
 
     local NewChatBtn = Util.Create("TextButton", {
         BackgroundColor3 = Theme.Accent,
