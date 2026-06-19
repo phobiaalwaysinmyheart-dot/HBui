@@ -12,7 +12,7 @@
 --]]
 
 local MAINTENANCE = true
-if MAINTENANCE then
+if MAINTENANCE and not (getgenv and getgenv()._HyperionDev) then
     local cg = (gethui and gethui()) or game:GetService("CoreGui")
     local gui = Instance.new("ScreenGui")
     gui.Name = "_HyperionMaintenance"
