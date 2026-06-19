@@ -5068,7 +5068,7 @@ function Hyperion:CreateWindow(config)
         math.clamp(c.B * (1 - f), 0, 1)) end
 
     local function BuildTheme(w)
-        return {
+        local t = {
             Accent = w.Accent, AccentDark = _darken(w.Accent, 0.25), AccentLight = _lighten(w.Accent, 0.25),
             AccentGlow = w.Accent, AccentSub = _darken(w.Accent, 0.4),
             Background = w.Background, Surface = w.Surface,
@@ -5078,6 +5078,21 @@ function Hyperion:CreateWindow(config)
             Border = w.Border, BorderLight = _lighten(w.Border, 0.3),
             ToggleOff = w.SurfaceLight, SliderBg = _darken(w.SurfaceLight, 0.2), InputBg = _darken(w.Background, 0.15),
         }
+        if w.Animated then
+            local a = w.GradA or w.Background
+            local b = w.GradB or w.Accent
+            t.Animated = true
+            t.ParticleStyle = "stars"
+            t.StarColor = w.StarColor or Color3.fromRGB(180, 205, 255)
+            t.GradientStops = {
+                {0,   a},
+                {0.3, b},
+                {0.5, _lighten(b, 0.12)},
+                {0.7, b},
+                {1,   a},
+            }
+        end
+        return t
     end
 
     local THEME_FIELDS = {
@@ -5088,9 +5103,13 @@ function Hyperion:CreateWindow(config)
         {key="Sidebar",      label="Sidebar"},
         {key="Text",         label="Text"},
         {key="Border",       label="Border"},
+        {key="GradA",        label="Grad 1", anim=true, default=Color3.fromRGB(8, 10, 26)},
+        {key="GradB",        label="Grad 2", anim=true, default=Color3.fromRGB(30, 42, 96)},
+        {key="StarColor",    label="Stars",  anim=true, default=Color3.fromRGB(180, 205, 255)},
     }
     local working = {}
-    for _, f in ipairs(THEME_FIELDS) do working[f.key] = Theme[f.key] end
+    for _, f in ipairs(THEME_FIELDS) do working[f.key] = Theme[f.key] or f.default end
+    working.Animated = Theme.Animated == true
 
     -- ThemeStore: persistence parallel to Config
     local ThemeStore = {}
@@ -5100,10 +5119,10 @@ function Hyperion:CreateWindow(config)
     end
     function ThemeStore.Save(name, w)
         ThemeStore.EnsureFolder()
-        local data = {}
+        local data = { Animated = w.Animated == true }
         for _, f in ipairs(THEME_FIELDS) do
             local c = w[f.key]
-            data[f.key] = { R = c.R, G = c.G, B = c.B }
+            if c then data[f.key] = { R = c.R, G = c.G, B = c.B } end
         end
         local okEnc, enc = pcall(HttpService.JSONEncode, HttpService, data)
         if not okEnc then return false end
@@ -5121,7 +5140,9 @@ function Hyperion:CreateWindow(config)
         for _, f in ipairs(THEME_FIELDS) do
             local c = data[f.key]
             if type(c) == "table" then w[f.key] = Color3.new(c.R or 0, c.G or 0, c.B or 0) end
+            if w[f.key] == nil and f.default then w[f.key] = f.default end
         end
+        w.Animated = data.Animated == true
         return w
     end
     function ThemeStore.List()
@@ -5292,6 +5313,42 @@ function Hyperion:CreateWindow(config)
         LoadFieldIntoPicker()
     end
 
+    local ThAnimToggleWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 5, ZIndex = 52, Parent = ThemeScroll })
+    local ThAnimLabel = Util.Create("TextLabel", {
+        BackgroundTransparency = 1, Size = UDim2.new(1, -48, 1, 0), Position = UDim2.new(0, 2, 0, 0),
+        Text = "Animated Background", TextColor3 = Theme.Text,
+        FontFace = Theme.FontMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 53, Parent = ThAnimToggleWrap,
+    })
+    Themed(ThAnimLabel, { TextColor3 = function(t) return t.Text end })
+    local ThAnimToggle = Util.Create("TextButton", {
+        BackgroundColor3 = Theme.ToggleOff, Size = UDim2.new(0, 38, 0, 20),
+        Position = UDim2.new(1, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5),
+        Text = "", AutoButtonColor = false, ZIndex = 53, Parent = ThAnimToggleWrap,
+    })
+    Util.AddCorner(ThAnimToggle, UDim.new(1, 0))
+    local ThAnimKnob = Util.Create("Frame", {
+        BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(0, 16, 0, 16),
+        Position = UDim2.new(0, 2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5),
+        ZIndex = 54, Parent = ThAnimToggle,
+    })
+    Util.AddCorner(ThAnimKnob, UDim.new(1, 0))
+
+    local ThAnimWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 6, Visible = false, ZIndex = 52, Parent = ThemeScroll })
+    Util.AddList(ThAnimWrap, Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center)
+
+    local function SetAnimVisual(on)
+        Util.TweenFast(ThAnimToggle, { BackgroundColor3 = on and Hyperion.Theme.Accent or Hyperion.Theme.ToggleOff })
+        Util.TweenFast(ThAnimKnob, { Position = on and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
+        ThAnimWrap.Visible = on
+    end
+    ThAnimToggle.MouseButton1Click:Connect(function()
+        working.Animated = not working.Animated
+        SetAnimVisual(working.Animated)
+        ApplyLive()
+    end)
+    SetAnimVisual(working.Animated)
+
     for _, f in ipairs(THEME_FIELDS) do
         local Sw = Util.Create("TextButton", {
             BackgroundColor3 = working[f.key],
@@ -5299,7 +5356,7 @@ function Hyperion:CreateWindow(config)
             Text = "",
             AutoButtonColor = false,
             ZIndex = 53,
-            Parent = ThSwatchWrap,
+            Parent = f.anim and ThAnimWrap or ThSwatchWrap,
         })
         Util.AddCorner(Sw, Theme.CornerSmall)
         local swStroke = Util.AddStroke(Sw, Theme.BorderLight, 1, 0.1)
@@ -5355,14 +5412,21 @@ function Hyperion:CreateWindow(config)
     })
     Util.AddCorner(HueCur, UDim.new(1, 0))
 
-    local ThHexWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 14), LayoutOrder = 4, ZIndex = 52, Parent = ThemeScroll })
-    HexLabel = Util.Create("TextLabel", {
-        BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, 0),
-        Text = "#000000", TextColor3 = Theme.TextMuted,
-        FontFace = Theme.Font, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left,
-        ZIndex = 52, Parent = ThHexWrap,
+    local ThHexWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 28), LayoutOrder = 4, ZIndex = 52, Parent = ThemeScroll })
+    HexLabel = Util.Create("TextBox", {
+        BackgroundColor3 = Theme.InputBg, Size = UDim2.new(1, 0, 1, 0),
+        Text = "#000000", PlaceholderText = "#RRGGBB",
+        TextColor3 = Theme.Text, PlaceholderColor3 = Theme.TextMuted,
+        FontFace = Theme.Font, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false, BorderSizePixel = 0,
+        ZIndex = 53, Parent = ThHexWrap,
     })
-    Themed(HexLabel, { TextColor3 = function(t) return t.TextMuted end })
+    Util.AddCorner(HexLabel, Theme.CornerSmall)
+    Util.AddPadding(HexLabel, 0, 8, 0, 8)
+    local _thHexStroke = Util.AddStroke(HexLabel, Theme.Border, 1, 0.3)
+    Themed(HexLabel, { BackgroundColor3 = function(t) return t.InputBg end, TextColor3 = function(t) return t.Text end, PlaceholderColor3 = function(t) return t.TextMuted end })
+    Themed(_thHexStroke, { Color = function(t) return t.Border end })
+    HexLabel.Focused:Connect(function() Util.TweenFast(_thHexStroke, { Color = Hyperion.Theme.Accent, Transparency = 0 }) end)
 
     local function CommitPickerColor()
         local c = Color3.fromHSV(hueState.h, hueState.s, hueState.v)
@@ -5374,6 +5438,20 @@ function Hyperion:CreateWindow(config)
         if swatches[selectedField] then swatches[selectedField].Btn.BackgroundColor3 = c end
         ApplyLive()
     end
+
+    local function ApplyHexInput(str)
+        str = tostring(str):gsub("%s", ""):gsub("^#", "")
+        if #str == 3 then str = str:sub(1,1):rep(2) .. str:sub(2,2):rep(2) .. str:sub(3,3):rep(2) end
+        if not str:match("^%x%x%x%x%x%x$") then return false end
+        local r, g, b = tonumber(str:sub(1,2), 16), tonumber(str:sub(3,4), 16), tonumber(str:sub(5,6), 16)
+        hueState.h, hueState.s, hueState.v = Color3.toHSV(Color3.fromRGB(r, g, b))
+        CommitPickerColor()
+        return true
+    end
+    HexLabel.FocusLost:Connect(function()
+        Util.TweenFast(_thHexStroke, { Color = Hyperion.Theme.Border, Transparency = 0.3 })
+        if not ApplyHexInput(HexLabel.Text) then HexLabel.Text = ToHex(working[selectedField]) end
+    end)
 
     local thSvDrag, thHueDrag = false, false
     SVBox.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then thSvDrag = true end end)
@@ -5418,21 +5496,21 @@ function Hyperion:CreateWindow(config)
         return Btn
     end
 
-    local ThSaveBtn  = ThemeActionBtn("Save Theme", 5, false)
-    local ThResetBtn = ThemeActionBtn("Reset to Current", 6, false)
+    local ThSaveBtn  = ThemeActionBtn("Save Theme", 7, false)
+    local ThResetBtn = ThemeActionBtn("Reset to Current", 8, false)
 
     -- Saved themes list
     local ThListLabel = Util.Create("TextLabel", {
         BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16),
         Text = "SAVED THEMES", TextColor3 = Theme.TextMuted,
         FontFace = Theme.FontSemiBold, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 7, ZIndex = 52, Parent = ThemeScroll,
+        LayoutOrder = 9, ZIndex = 52, Parent = ThemeScroll,
     })
     Themed(ThListLabel, { TextColor3 = function(t) return t.TextMuted end })
 
     local ThListOuter = Util.Create("Frame", {
         BackgroundColor3 = Theme.Background, Size = UDim2.new(1, 0, 0, 120),
-        LayoutOrder = 8, ZIndex = 52, Parent = ThemeScroll,
+        LayoutOrder = 10, ZIndex = 52, Parent = ThemeScroll,
     })
     Util.AddPadding(ThListOuter, 6, 6, 6, 6)
     Util.AddCorner(ThListOuter, Theme.CornerSmall)
@@ -5474,6 +5552,8 @@ function Hyperion:CreateWindow(config)
                 local w = ThemeStore.Load(n)
                 if not w then return end
                 for _, f in ipairs(THEME_FIELDS) do if w[f.key] then working[f.key] = w[f.key] end end
+                working.Animated = w.Animated == true
+                SetAnimVisual(working.Animated)
                 for k, sw in pairs(swatches) do sw.Btn.BackgroundColor3 = working[k] end
                 ApplyLive()
                 LoadFieldIntoPicker()
@@ -5514,7 +5594,9 @@ function Hyperion:CreateWindow(config)
         end
     end)
     ThResetBtn.MouseButton1Click:Connect(function()
-        for _, f in ipairs(THEME_FIELDS) do working[f.key] = Hyperion.Theme[f.key] end
+        for _, f in ipairs(THEME_FIELDS) do working[f.key] = Hyperion.Theme[f.key] or f.default end
+        working.Animated = Hyperion.Theme.Animated == true
+        SetAnimVisual(working.Animated)
         for k, sw in pairs(swatches) do sw.Btn.BackgroundColor3 = working[k] end
         LoadFieldIntoPicker()
         ThStatus.Text = "Reset to current theme"
