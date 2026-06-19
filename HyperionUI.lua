@@ -5082,7 +5082,7 @@ function Hyperion:CreateWindow(config)
             local a = w.GradA or w.Background
             local b = w.GradB or w.Accent
             t.Animated = true
-            t.ParticleStyle = "stars"
+            t.ParticleStyle = w.Particle or "stars"
             t.StarColor = w.StarColor or Color3.fromRGB(180, 205, 255)
             t.GradientStops = {
                 {0,   a},
@@ -5107,9 +5107,11 @@ function Hyperion:CreateWindow(config)
         {key="GradB",        label="Grad 2", anim=true, default=Color3.fromRGB(30, 42, 96)},
         {key="StarColor",    label="Stars",  anim=true, default=Color3.fromRGB(180, 205, 255)},
     }
+    local THEME_STYLES = { "stars", "petals", "hearts", "snowflakes", "embers", "bubbles", "paws", "wisps", "orbs", "gridlines" }
     local working = {}
     for _, f in ipairs(THEME_FIELDS) do working[f.key] = Theme[f.key] or f.default end
     working.Animated = Theme.Animated == true
+    working.Particle = Theme.ParticleStyle or "stars"
 
     -- ThemeStore: persistence parallel to Config
     local ThemeStore = {}
@@ -5119,7 +5121,7 @@ function Hyperion:CreateWindow(config)
     end
     function ThemeStore.Save(name, w)
         ThemeStore.EnsureFolder()
-        local data = { Animated = w.Animated == true }
+        local data = { Animated = w.Animated == true, Particle = w.Particle or "stars" }
         for _, f in ipairs(THEME_FIELDS) do
             local c = w[f.key]
             if c then data[f.key] = { R = c.R, G = c.G, B = c.B } end
@@ -5143,6 +5145,7 @@ function Hyperion:CreateWindow(config)
             if w[f.key] == nil and f.default then w[f.key] = f.default end
         end
         w.Animated = data.Animated == true
+        w.Particle = data.Particle or "stars"
         return w
     end
     function ThemeStore.List()
@@ -5334,13 +5337,44 @@ function Hyperion:CreateWindow(config)
     })
     Util.AddCorner(ThAnimKnob, UDim.new(1, 0))
 
-    local ThAnimWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 6, Visible = false, ZIndex = 52, Parent = ThemeScroll })
+    local ThEffectWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 6, Visible = false, ZIndex = 52, Parent = ThemeScroll })
+    local ThEffectLabel = Util.Create("TextLabel", {
+        BackgroundTransparency = 1, Size = UDim2.new(0, 50, 1, 0), Position = UDim2.new(0, 2, 0, 0),
+        Text = "Effect", TextColor3 = Theme.TextDim,
+        FontFace = Theme.FontMedium, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 53, Parent = ThEffectWrap,
+    })
+    Themed(ThEffectLabel, { TextColor3 = function(t) return t.TextDim end })
+    local ThEffectBtn = Util.Create("TextButton", {
+        BackgroundColor3 = Theme.SurfaceLight, BackgroundTransparency = 0.2,
+        Size = UDim2.new(1, -56, 1, 0), Position = UDim2.new(0, 54, 0, 0),
+        Text = "Stars", TextColor3 = Theme.Text,
+        FontFace = Theme.FontMedium, TextSize = 12,
+        AutoButtonColor = false, ZIndex = 53, Parent = ThEffectWrap,
+    })
+    Util.AddCorner(ThEffectBtn, Theme.CornerSmall)
+    local _thEffStroke = Util.AddStroke(ThEffectBtn, Theme.Border, 1, 0.4)
+    Themed(ThEffectBtn, { BackgroundColor3 = function(t) return t.SurfaceLight end, TextColor3 = function(t) return t.Text end })
+    Themed(_thEffStroke, { Color = function(t) return t.Border end })
+    local function _styleLabel(s) return s:sub(1,1):upper() .. s:sub(2) end
+    local function SetEffectText() ThEffectBtn.Text = _styleLabel(working.Particle) .. "  ›" end
+    SetEffectText()
+    ThEffectBtn.MouseButton1Click:Connect(function()
+        local idx = 1
+        for i = 1, #THEME_STYLES do if THEME_STYLES[i] == working.Particle then idx = i break end end
+        working.Particle = THEME_STYLES[(idx % #THEME_STYLES) + 1]
+        SetEffectText()
+        if working.Animated then ApplyLive() end
+    end)
+
+    local ThAnimWrap = Util.Create("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 30), LayoutOrder = 7, Visible = false, ZIndex = 52, Parent = ThemeScroll })
     Util.AddList(ThAnimWrap, Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center)
 
     local function SetAnimVisual(on)
         Util.TweenFast(ThAnimToggle, { BackgroundColor3 = on and Hyperion.Theme.Accent or Hyperion.Theme.ToggleOff })
         Util.TweenFast(ThAnimKnob, { Position = on and UDim2.new(1, -18, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
         ThAnimWrap.Visible = on
+        ThEffectWrap.Visible = on
     end
     ThAnimToggle.MouseButton1Click:Connect(function()
         working.Animated = not working.Animated
@@ -5496,21 +5530,21 @@ function Hyperion:CreateWindow(config)
         return Btn
     end
 
-    local ThSaveBtn  = ThemeActionBtn("Save Theme", 7, false)
-    local ThResetBtn = ThemeActionBtn("Reset to Current", 8, false)
+    local ThSaveBtn  = ThemeActionBtn("Save Theme", 8, false)
+    local ThResetBtn = ThemeActionBtn("Reset to Current", 9, false)
 
     -- Saved themes list
     local ThListLabel = Util.Create("TextLabel", {
         BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16),
         Text = "SAVED THEMES", TextColor3 = Theme.TextMuted,
         FontFace = Theme.FontSemiBold, TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left,
-        LayoutOrder = 9, ZIndex = 52, Parent = ThemeScroll,
+        LayoutOrder = 10, ZIndex = 52, Parent = ThemeScroll,
     })
     Themed(ThListLabel, { TextColor3 = function(t) return t.TextMuted end })
 
     local ThListOuter = Util.Create("Frame", {
         BackgroundColor3 = Theme.Background, Size = UDim2.new(1, 0, 0, 120),
-        LayoutOrder = 10, ZIndex = 52, Parent = ThemeScroll,
+        LayoutOrder = 11, ZIndex = 52, Parent = ThemeScroll,
     })
     Util.AddPadding(ThListOuter, 6, 6, 6, 6)
     Util.AddCorner(ThListOuter, Theme.CornerSmall)
@@ -5553,6 +5587,8 @@ function Hyperion:CreateWindow(config)
                 if not w then return end
                 for _, f in ipairs(THEME_FIELDS) do if w[f.key] then working[f.key] = w[f.key] end end
                 working.Animated = w.Animated == true
+                working.Particle = w.Particle or "stars"
+                SetEffectText()
                 SetAnimVisual(working.Animated)
                 for k, sw in pairs(swatches) do sw.Btn.BackgroundColor3 = working[k] end
                 ApplyLive()
@@ -5596,6 +5632,8 @@ function Hyperion:CreateWindow(config)
     ThResetBtn.MouseButton1Click:Connect(function()
         for _, f in ipairs(THEME_FIELDS) do working[f.key] = Hyperion.Theme[f.key] or f.default end
         working.Animated = Hyperion.Theme.Animated == true
+        working.Particle = Hyperion.Theme.ParticleStyle or "stars"
+        SetEffectText()
         SetAnimVisual(working.Animated)
         for k, sw in pairs(swatches) do sw.Btn.BackgroundColor3 = working[k] end
         LoadFieldIntoPicker()
