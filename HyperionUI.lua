@@ -4142,6 +4142,7 @@ function Hyperion:CreateWindow(config)
 
     local _closeChat = nil
     local _closeTheme = nil
+    local _openChat, _toggleChat, _addChatMsg, _setChatStatus, _clearChat, _setChatSend
 
     local function OpenConfigPanel()
         if cfgPanelOpen then return end
@@ -4362,6 +4363,7 @@ function Hyperion:CreateWindow(config)
     -- AI CHAT PANEL
     -- Mirrors the config panel: slides in from the left over the sidebar.
     -- ================================================================
+    ;(function()
     local CHAT_W          = 300
     local CHAT_INPUT_H    = 46
     local CHAT_HEADER_H   = 42
@@ -4725,13 +4727,21 @@ function Hyperion:CreateWindow(config)
         end,
     })
 
+    _openChat      = OpenChatPanel
+    _toggleChat    = function() if chatPanelOpen then CloseChatPanel() else OpenChatPanel() end end
+    _addChatMsg    = function(role, text) AddChatBubble(role == "user" and "user" or "ai", tostring(text)) end
+    _setChatStatus = SetChatStatus
+    _clearChat     = ClearChatLog
+    _setChatSend   = function(fn) chatSendHandler = fn end
+    end)() -- AI CHAT PANEL scope
+
     local _showKb, _hideKb, _toggleKb
     local _openTheme, _toggleTheme
 
     -- ================================================================
     -- KEYBIND HUD  (on-screen list, left side; click a key to rebind)
     -- ================================================================
-    do
+    ;(function()
     local kbHudVisible = false
     local KbHud = Util.Create("Frame", {
         Name = "KeybindHUD",
@@ -4882,7 +4892,7 @@ function Hyperion:CreateWindow(config)
     _showKb   = function() SetKbHud(true)  end
     _hideKb   = function() SetKbHud(false) end
     _toggleKb = function() SetKbHud(not kbHudVisible) end
-    end -- KEYBIND HUD scope
+    end)() -- KEYBIND HUD scope
 
     -- ================================================================
     -- THEME CREATOR PANEL  (slides in from the left, like Config/Chat)
@@ -5347,7 +5357,7 @@ function Hyperion:CreateWindow(config)
         if themePanelOpen then return end
         themePanelOpen = true
         if cfgPanelOpen then CloseConfigPanel() end
-        if chatPanelOpen then CloseChatPanel() end
+        if _closeChat then _closeChat() end
         SelectField(selectedField)
         RefreshThemeList()
         ThemeOverlay.Position = TH_CLOSED
@@ -5749,17 +5759,13 @@ function Hyperion:CreateWindow(config)
         RefreshConfigList()
     end
 
-    function WindowObj:OpenChatPanel()  OpenChatPanel()  end
-    function WindowObj:CloseChatPanel() CloseChatPanel() end
-    function WindowObj:ToggleChatPanel()
-        if chatPanelOpen then CloseChatPanel() else OpenChatPanel() end
-    end
-    function WindowObj:AddChatMessage(role, text)
-        AddChatBubble(role == "user" and "user" or "ai", tostring(text))
-    end
-    function WindowObj:SetChatStatus(text) SetChatStatus(text) end
-    function WindowObj:ClearChat()         ClearChatLog()      end
-    function WindowObj:OnChatSend(fn)      chatSendHandler = fn end
+    function WindowObj:OpenChatPanel()  if _openChat then _openChat() end end
+    function WindowObj:CloseChatPanel() if _closeChat then _closeChat() end end
+    function WindowObj:ToggleChatPanel() if _toggleChat then _toggleChat() end end
+    function WindowObj:AddChatMessage(role, text) if _addChatMsg then _addChatMsg(role, text) end end
+    function WindowObj:SetChatStatus(text) if _setChatStatus then _setChatStatus(text) end end
+    function WindowObj:ClearChat()         if _clearChat then _clearChat() end end
+    function WindowObj:OnChatSend(fn)      if _setChatSend then _setChatSend(fn) end end
 
     function WindowObj:OpenThemePanel()  if _openTheme then _openTheme() end end
     function WindowObj:CloseThemePanel() if _closeTheme then _closeTheme() end end
