@@ -3153,6 +3153,7 @@ function Hyperion:CreateWindow(config)
 
     local SearchBtn = MakeBottomBtn("rbxassetid://10734943674", "Search")   -- lucide-search
     local FolderOpenBtn = MakeBottomBtn("rbxassetid://10723387563", "Config") -- lucide-folder
+    local ChatBtn   = MakeBottomBtn("rbxassetid://10734982144", "Chat")      -- lucide-terminal
     local InfoBtn   = MakeBottomBtn("rbxassetid://10723415903", "Info")      -- lucide-info
 
     -- If the config system is disabled, hide the folder button entirely.
@@ -4116,10 +4117,13 @@ function Hyperion:CreateWindow(config)
     })
     CfgScroll.Parent = CfgSlideClip
 
+    local _closeChat = nil
+
     local function OpenConfigPanel()
         if cfgPanelOpen then return end
         cfgPanelOpen = true
         _G._HyperionCfgOpen = true
+        if _closeChat then _closeChat() end
         HideDeleteConfirm()
         RefreshConfigList()
 
@@ -4328,6 +4332,372 @@ function Hyperion:CreateWindow(config)
     BtnCancelDelete.MouseButton1Click:Connect(HideDeleteConfirm)
 
     RefreshConfigList()
+
+    -- ================================================================
+    -- AI CHAT PANEL
+    -- Mirrors the config panel: slides in from the left over the sidebar.
+    -- ================================================================
+    local CHAT_W          = 300
+    local CHAT_INPUT_H    = 46
+    local CHAT_HEADER_H   = 42
+    local chatPanelOpen   = false
+    local chatSendHandler = nil
+    _G._HyperionChatOpen  = false
+
+    local ChatOverlay = Util.Create("Frame", {
+        Name             = "ChatOverlay",
+        BackgroundColor3 = Theme.Sidebar,
+        Size             = UDim2.new(0, CHAT_W, 1, -HeaderHeight),
+        Position         = UDim2.new(0, -CHAT_W - 14, 0, HeaderHeight),
+        ClipsDescendants = true,
+        BorderSizePixel  = 0,
+        Visible          = false,
+        ZIndex           = 50,
+        Parent           = MainFrame,
+    })
+    Util.AddCorner(ChatOverlay, Theme.CornerRadius)
+    local _chatStroke = Util.AddStroke(ChatOverlay, Theme.BorderLight, 1, 0.12)
+    Themed(ChatOverlay, { BackgroundColor3 = function(t) return t.Sidebar end })
+    Themed(_chatStroke, { Color = function(t) return t.BorderLight end })
+
+    local ChatClip = Util.Create("Frame", {
+        BackgroundTransparency = 1,
+        Size     = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, -20, 0, 0),
+        ClipsDescendants = false,
+        ZIndex   = 51,
+        Parent   = ChatOverlay,
+    })
+
+    -- ── Header strip ──────────────────────────────────────────────────────
+    local ChatHeader = Util.Create("Frame", {
+        BackgroundColor3 = Theme.SidebarActive,
+        Size     = UDim2.new(1, 0, 0, CHAT_HEADER_H),
+        BorderSizePixel = 0,
+        ZIndex   = 52,
+        Parent   = ChatClip,
+    })
+    Themed(ChatHeader, { BackgroundColor3 = function(t) return t.SidebarActive end })
+    do
+        local al = Util.Create("Frame", {
+            BackgroundColor3 = Color3.new(1,1,1),
+            Size = UDim2.new(1,0,0,1),
+            BorderSizePixel = 0, ZIndex = 53, Parent = ChatHeader,
+        })
+        local g = Util.Create("UIGradient", {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Theme.AccentDark),
+                ColorSequenceKeypoint.new(0.5, Theme.Accent),
+                ColorSequenceKeypoint.new(1, Theme.AccentDark),
+            }),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.5),
+                NumberSequenceKeypoint.new(0.5, 0),
+                NumberSequenceKeypoint.new(1, 0.5),
+            }),
+            Parent = al,
+        })
+        Themed(g, { Color = function(t)
+            return ColorSequence.new({
+                ColorSequenceKeypoint.new(0, t.AccentDark),
+                ColorSequenceKeypoint.new(0.5, t.Accent),
+                ColorSequenceKeypoint.new(1, t.AccentDark),
+            })
+        end })
+    end
+
+    local ChatTitle = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 14, 0, 7),
+        Size     = UDim2.new(1, -52, 0, 16),
+        Text     = "AI Assistant",
+        TextColor3 = Theme.Text,
+        FontFace = Theme.FontBold,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex   = 53,
+        Parent   = ChatHeader,
+    })
+    Themed(ChatTitle, { TextColor3 = function(t) return t.Text end })
+
+    local ChatStatus = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 14, 0, 25),
+        Size     = UDim2.new(1, -52, 0, 12),
+        Text     = "Ready",
+        TextColor3 = Theme.TextMuted,
+        FontFace = Theme.Font,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex   = 53,
+        Parent   = ChatHeader,
+    })
+    Themed(ChatStatus, { TextColor3 = function(t) return t.TextMuted end })
+
+    local ChatCloseBtn = Util.Create("ImageButton", {
+        BackgroundColor3 = Theme.SurfaceActive,
+        BackgroundTransparency = 0.4,
+        Size     = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -32, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Image    = "rbxassetid://10747384394",
+        ImageColor3 = Theme.TextDim,
+        ScaleType = Enum.ScaleType.Fit,
+        AutoButtonColor = false,
+        ZIndex   = 54,
+        Parent   = ChatHeader,
+    })
+    Util.AddCorner(ChatCloseBtn, Theme.CornerSmall)
+    Themed(ChatCloseBtn, {
+        BackgroundColor3 = function(t) return t.SurfaceActive end,
+        ImageColor3      = function(t) return t.TextDim end,
+    })
+    ChatCloseBtn.MouseEnter:Connect(function()
+        Util.TweenFast(ChatCloseBtn, {BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Error})
+    end)
+    ChatCloseBtn.MouseLeave:Connect(function()
+        Util.TweenFast(ChatCloseBtn, {BackgroundTransparency = 0.4, ImageColor3 = Hyperion.Theme.TextDim})
+    end)
+
+    -- ── Message log ─────────────────────────────────────────────────────────
+    local ChatLog = Util.Create("ScrollingFrame", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, CHAT_HEADER_H),
+        Size     = UDim2.new(1, 0, 1, -(CHAT_HEADER_H + CHAT_INPUT_H)),
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Theme.Accent,
+        ScrollBarImageTransparency = 0.4,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        CanvasSize = UDim2.new(0,0,0,0),
+        ZIndex   = 52,
+        Parent   = ChatClip,
+    })
+    Util.AddList(ChatLog, Enum.FillDirection.Vertical, 8)
+    Util.AddPadding(ChatLog, 10, 10, 10, 10)
+    Themed(ChatLog, { ScrollBarImageColor3 = function(t) return t.Accent end })
+
+    local ChatHint = nil
+    local function ShowChatHint()
+        if ChatHint and ChatHint.Parent then return end
+        ChatHint = Util.Create("TextLabel", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 40),
+            Text = "Ask the assistant anything.",
+            TextColor3 = Theme.TextMuted,
+            FontFace = Theme.Font,
+            TextSize = 12,
+            TextWrapped = true,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            ZIndex = 52,
+            Parent = ChatLog,
+        })
+        Themed(ChatHint, { TextColor3 = function(t) return t.TextMuted end })
+    end
+    ShowChatHint()
+
+    local function AddChatBubble(role, text)
+        if ChatHint and ChatHint.Parent then ChatHint:Destroy() end
+        ChatHint = nil
+        local isUser = (role == "user")
+        local maxW = math.floor(CHAT_W * 0.74)
+
+        local Row = Util.Create("Frame", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y,
+            ZIndex = 52,
+            Parent = ChatLog,
+        })
+        local Bubble = Util.Create("Frame", {
+            BackgroundColor3 = isUser and Theme.Accent or Theme.SurfaceLight,
+            AnchorPoint = Vector2.new(isUser and 1 or 0, 0),
+            Position = UDim2.new(isUser and 1 or 0, 0, 0, 0),
+            Size = UDim2.new(0, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.XY,
+            ZIndex = 53,
+            Parent = Row,
+        })
+        Util.AddCorner(Bubble, Theme.CornerRadius)
+        Util.AddPadding(Bubble, 7, 10, 7, 10)
+        Util.Create("UISizeConstraint", { MaxSize = Vector2.new(maxW, math.huge), Parent = Bubble })
+
+        local Msg = Util.Create("TextLabel", {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(0, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.XY,
+            Text = text,
+            TextColor3 = isUser and Color3.fromRGB(255,255,255) or Theme.Text,
+            FontFace = Theme.Font,
+            TextSize = 13,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            ZIndex = 54,
+            Parent = Bubble,
+        })
+        Util.Create("UISizeConstraint", { MaxSize = Vector2.new(maxW - 20, math.huge), Parent = Msg })
+        if not isUser then
+            Themed(Bubble, { BackgroundColor3 = function(t) return t.SurfaceLight end })
+            Themed(Msg, { TextColor3 = function(t) return t.Text end })
+        else
+            Themed(Bubble, { BackgroundColor3 = function(t) return t.Accent end })
+        end
+
+        task.defer(function()
+            if ChatLog and ChatLog.Parent then
+                ChatLog.CanvasPosition = Vector2.new(0, ChatLog.AbsoluteCanvasSize.Y)
+            end
+        end)
+        return Msg
+    end
+
+    local function SetChatStatus(t) ChatStatus.Text = t or "Ready" end
+    local function ClearChatLog()
+        for _, c in ipairs(ChatLog:GetChildren()) do
+            if c:IsA("Frame") or c:IsA("TextLabel") then c:Destroy() end
+        end
+        ChatHint = nil
+        ShowChatHint()
+        SetChatStatus("Ready")
+    end
+
+    -- ── Input bar ─────────────────────────────────────────────────────────
+    local ChatInputBar = Util.Create("Frame", {
+        BackgroundColor3 = Theme.SidebarActive,
+        Position = UDim2.new(0, 0, 1, -CHAT_INPUT_H),
+        Size = UDim2.new(1, 0, 0, CHAT_INPUT_H),
+        BorderSizePixel = 0,
+        ZIndex = 52,
+        Parent = ChatClip,
+    })
+    Themed(ChatInputBar, { BackgroundColor3 = function(t) return t.SidebarActive end })
+    local _chatInputSep = Util.Create("Frame", {
+        BackgroundColor3 = Theme.Border, BackgroundTransparency = 0.4,
+        Size = UDim2.new(1,0,0,1), BorderSizePixel = 0, ZIndex = 53, Parent = ChatInputBar,
+    })
+    Themed(_chatInputSep, { BackgroundColor3 = function(t) return t.Border end })
+
+    local ChatInput = Util.Create("TextBox", {
+        BackgroundColor3 = Theme.InputBg,
+        Position = UDim2.new(0, 10, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(1, -54, 0, 30),
+        Text = "",
+        PlaceholderText = "Message...",
+        TextColor3 = Theme.Text,
+        PlaceholderColor3 = Theme.TextMuted,
+        FontFace = Theme.Font,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false,
+        ClipsDescendants = true,
+        BorderSizePixel = 0,
+        ZIndex = 53,
+        Parent = ChatInputBar,
+    })
+    Util.AddCorner(ChatInput, Theme.CornerSmall)
+    Util.AddPadding(ChatInput, 0, 8, 0, 8)
+    local _chatInStroke = Util.AddStroke(ChatInput, Theme.Border, 1, 0.3)
+    Themed(ChatInput, {
+        BackgroundColor3 = function(t) return t.InputBg end,
+        TextColor3 = function(t) return t.Text end,
+        PlaceholderColor3 = function(t) return t.TextMuted end,
+    })
+    Themed(_chatInStroke, { Color = function(t) return t.Border end })
+    ChatInput.Focused:Connect(function()
+        Util.TweenFast(_chatInStroke, {Color = Hyperion.Theme.Accent, Transparency = 0})
+    end)
+    ChatInput.FocusLost:Connect(function()
+        Util.TweenFast(_chatInStroke, {Color = Hyperion.Theme.Border, Transparency = 0.3})
+    end)
+
+    local ChatSendBtn = Util.Create("TextButton", {
+        BackgroundColor3 = Theme.Accent,
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size = UDim2.new(0, 34, 0, 30),
+        Text = "→",
+        TextColor3 = Color3.fromRGB(255,255,255),
+        FontFace = Theme.FontBold,
+        TextSize = 18,
+        AutoButtonColor = false,
+        ZIndex = 53,
+        Parent = ChatInputBar,
+    })
+    Util.AddCorner(ChatSendBtn, Theme.CornerSmall)
+    Themed(ChatSendBtn, { BackgroundColor3 = function(t) return t.Accent end })
+    ChatSendBtn.MouseEnter:Connect(function() Util.TweenFast(ChatSendBtn, {BackgroundColor3 = Hyperion.Theme.AccentLight}) end)
+    ChatSendBtn.MouseLeave:Connect(function() Util.TweenFast(ChatSendBtn, {BackgroundColor3 = Hyperion.Theme.Accent}) end)
+
+    local function DoChatSend()
+        local txt = ChatInput.Text or ""
+        txt = txt:gsub("^%s+", ""):gsub("%s+$", "")
+        if txt == "" then return end
+        ChatInput.Text = ""
+        AddChatBubble("user", txt)
+        if chatSendHandler then task.spawn(chatSendHandler, txt) end
+    end
+    ChatSendBtn.MouseButton1Click:Connect(DoChatSend)
+    ChatInput.FocusLost:Connect(function(enter) if enter then DoChatSend() end end)
+
+    -- ── Open / close ──────────────────────────────────────────────────────
+    local CHAT_OPEN   = UDim2.new(0, 0, 0, HeaderHeight)
+    local CHAT_CLOSED = UDim2.new(0, -CHAT_W - 14, 0, HeaderHeight)
+
+    local function OpenChatPanel()
+        if chatPanelOpen then return end
+        chatPanelOpen = true
+        _G._HyperionChatOpen = true
+        if cfgPanelOpen then CloseConfigPanel() end
+        ChatOverlay.Position = CHAT_CLOSED
+        ChatOverlay.BackgroundTransparency = 1
+        ChatOverlay.Visible = true
+        ChatClip.Position = UDim2.new(0, -20, 0, 0)
+        Util.Tween(ChatOverlay, 0.30, { Position = CHAT_OPEN, BackgroundTransparency = 0 }, Enum.EasingStyle.Quint)
+        Util.Tween(ChatClip, 0.30, { Position = UDim2.new(0,0,0,0) }, Enum.EasingStyle.Quint)
+        Util.TweenFast(ChatBtn, { BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Accent })
+    end
+
+    local function CloseChatPanel()
+        if not chatPanelOpen then return end
+        chatPanelOpen = false
+        _G._HyperionChatOpen = false
+        Util.Tween(ChatOverlay, 0.22, { Position = CHAT_CLOSED, BackgroundTransparency = 1 }, Enum.EasingStyle.Quint)
+        Util.Tween(ChatClip, 0.22, { Position = UDim2.new(0,-20,0,0) }, Enum.EasingStyle.Quint)
+        Util.TweenFast(ChatBtn, { BackgroundTransparency = 0.5, ImageColor3 = Hyperion.Theme.TextMuted })
+        task.delay(0.25, function()
+            if not chatPanelOpen and ChatOverlay and ChatOverlay.Parent then ChatOverlay.Visible = false end
+        end)
+    end
+
+    _closeChat = CloseChatPanel
+
+    ChatBtn.MouseButton1Click:Connect(function()
+        if chatPanelOpen then CloseChatPanel() else OpenChatPanel() end
+    end)
+    ChatCloseBtn.MouseButton1Click:Connect(CloseChatPanel)
+
+    Util.Connect(UserInputService.InputBegan, function(input, processed)
+        if not chatPanelOpen then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local pos = input.Position
+        local oPos, oSize = ChatOverlay.AbsolutePosition, ChatOverlay.AbsoluteSize
+        local insidePanel = pos.X >= oPos.X and pos.X <= oPos.X + oSize.X
+            and pos.Y >= oPos.Y and pos.Y <= oPos.Y + oSize.Y
+        local bPos, bSize = ChatBtn.AbsolutePosition, ChatBtn.AbsoluteSize
+        local insideBtn = pos.X >= bPos.X and pos.X <= bPos.X + bSize.X
+            and pos.Y >= bPos.Y and pos.Y <= bPos.Y + bSize.Y
+        if not insidePanel and not insideBtn then CloseChatPanel() end
+    end)
+
+    -- Themed accent state for the bottom Chat button
+    Themed(ChatBtn, {
+        ImageColor3 = function(t)
+            return _G._HyperionChatOpen and t.Accent or t.TextMuted
+        end,
+    })
 
     -- ============================================================
     -- CONTENT AREA
@@ -4687,6 +5057,18 @@ function Hyperion:CreateWindow(config)
     function WindowObj:RefreshConfigList()
         RefreshConfigList()
     end
+
+    function WindowObj:OpenChatPanel()  OpenChatPanel()  end
+    function WindowObj:CloseChatPanel() CloseChatPanel() end
+    function WindowObj:ToggleChatPanel()
+        if chatPanelOpen then CloseChatPanel() else OpenChatPanel() end
+    end
+    function WindowObj:AddChatMessage(role, text)
+        AddChatBubble(role == "user" and "user" or "ai", tostring(text))
+    end
+    function WindowObj:SetChatStatus(text) SetChatStatus(text) end
+    function WindowObj:ClearChat()         ClearChatLog()      end
+    function WindowObj:OnChatSend(fn)      chatSendHandler = fn end
 
     -- ============================================================
     -- THEME PICKER  (call from any section: Section:AddThemePicker())
