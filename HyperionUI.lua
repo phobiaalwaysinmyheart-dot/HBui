@@ -4918,13 +4918,32 @@ function Hyperion:CreateWindow(config)
     Themed(_kbHudStroke, { Color = function(t) return t.BorderLight end })
 
     local _kbAccent = Util.Create("Frame", {
-        BackgroundColor3 = Theme.Accent,
+        BackgroundColor3 = Color3.new(1, 1, 1),
         Size = UDim2.new(1, -16, 0, 2),
         Position = UDim2.new(0, 8, 0, 6),
         BorderSizePixel = 0, ZIndex = 62, Parent = KbHud,
     })
     Util.AddCorner(_kbAccent, UDim.new(1, 0))
-    Themed(_kbAccent, { BackgroundColor3 = function(t) return t.Accent end })
+    local _kbAccentGrad = Util.Create("UIGradient", {
+        Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Theme.AccentDark),
+            ColorSequenceKeypoint.new(0.5, Theme.Accent),
+            ColorSequenceKeypoint.new(1, Theme.AccentDark),
+        }),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.5),
+            NumberSequenceKeypoint.new(0.5, 0),
+            NumberSequenceKeypoint.new(1, 0.5),
+        }),
+        Parent = _kbAccent,
+    })
+    Themed(_kbAccentGrad, { Color = function(t)
+        return ColorSequence.new({
+            ColorSequenceKeypoint.new(0, t.AccentDark),
+            ColorSequenceKeypoint.new(0.5, t.Accent),
+            ColorSequenceKeypoint.new(1, t.AccentDark),
+        })
+    end })
 
     local KbHudInner = Util.Create("Frame", {
         BackgroundTransparency = 1,
