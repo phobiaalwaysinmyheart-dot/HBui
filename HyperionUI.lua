@@ -4143,6 +4143,7 @@ function Hyperion:CreateWindow(config)
     local _closeChat = nil
     local _closeTheme = nil
     local _openChat, _toggleChat, _addChatMsg, _setChatStatus, _clearChat, _setChatSend
+    local _setChatPersonas, _onPersonaChange, _onNewChat, _getPersona
 
     local function OpenConfigPanel()
         if cfgPanelOpen then return end
@@ -4367,8 +4368,12 @@ function Hyperion:CreateWindow(config)
     local CHAT_W          = 300
     local CHAT_INPUT_H    = 46
     local CHAT_HEADER_H   = 42
+    local CHAT_BAR_H      = 36
     local chatPanelOpen   = false
     local chatSendHandler = nil
+    local personaHandler  = nil
+    local newChatHandler  = nil
+    local currentPersona  = ""
     _G._HyperionChatOpen  = false
 
     local ChatOverlay = Util.Create("Frame", {
@@ -4486,11 +4491,154 @@ function Hyperion:CreateWindow(config)
         Util.TweenFast(ChatCloseBtn, {BackgroundTransparency = 0.4, ImageColor3 = Hyperion.Theme.TextDim})
     end)
 
+    local PersonaBar = Util.Create("Frame", {
+        BackgroundColor3 = Theme.Sidebar,
+        Position = UDim2.new(0, 0, 0, CHAT_HEADER_H),
+        Size     = UDim2.new(1, 0, 0, CHAT_BAR_H),
+        BorderSizePixel = 0,
+        ZIndex   = 52,
+        Parent   = ChatClip,
+    })
+    Themed(PersonaBar, { BackgroundColor3 = function(t) return t.Sidebar end })
+
+    local PersonaBtn = Util.Create("TextButton", {
+        BackgroundColor3 = Theme.SurfaceLight,
+        BackgroundTransparency = 0.2,
+        Position = UDim2.new(0, 10, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size     = UDim2.new(1, -94, 0, 26),
+        Text     = "Select persona",
+        TextColor3 = Theme.Text,
+        FontFace = Theme.FontMedium,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        AutoButtonColor = false,
+        ZIndex   = 53,
+        Parent   = PersonaBar,
+    })
+    Util.AddCorner(PersonaBtn, Theme.CornerSmall)
+    Util.AddPadding(PersonaBtn, 0, 9, 0, 9)
+    local _pbStroke = Util.AddStroke(PersonaBtn, Theme.Border, 1, 0.4)
+    Themed(PersonaBtn, { BackgroundColor3 = function(t) return t.SurfaceLight end, TextColor3 = function(t) return t.Text end })
+    Themed(_pbStroke, { Color = function(t) return t.Border end })
+    local PersonaArrow = Util.Create("TextLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -16, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(0, 12, 0, 12),
+        Text = "▾",
+        TextColor3 = Theme.TextMuted,
+        FontFace = Theme.Font,
+        TextSize = 11,
+        ZIndex = 54,
+        Parent = PersonaBtn,
+    })
+    Themed(PersonaArrow, { TextColor3 = function(t) return t.TextMuted end })
+
+    local NewChatBtn = Util.Create("TextButton", {
+        BackgroundColor3 = Theme.Accent,
+        BackgroundTransparency = 0.85,
+        Position = UDim2.new(1, -10, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size     = UDim2.new(0, 70, 0, 26),
+        Text     = "+ New",
+        TextColor3 = Theme.Accent,
+        FontFace = Theme.FontMedium,
+        TextSize = 12,
+        AutoButtonColor = false,
+        ZIndex   = 53,
+        Parent   = PersonaBar,
+    })
+    Util.AddCorner(NewChatBtn, Theme.CornerSmall)
+    local _ncStroke = Util.AddStroke(NewChatBtn, Theme.Accent, 1, 0.5)
+    Themed(NewChatBtn, { TextColor3 = function(t) return t.Accent end, BackgroundColor3 = function(t) return t.Accent end })
+    Themed(_ncStroke, { Color = function(t) return t.Accent end })
+    NewChatBtn.MouseEnter:Connect(function() Util.TweenFast(NewChatBtn, {BackgroundTransparency = 0.7}) end)
+    NewChatBtn.MouseLeave:Connect(function() Util.TweenFast(NewChatBtn, {BackgroundTransparency = 0.85}) end)
+
+    local PersonaList = Util.Create("Frame", {
+        BackgroundColor3 = Theme.SidebarActive,
+        Position = UDim2.new(0, 10, 0, CHAT_HEADER_H + CHAT_BAR_H - 4),
+        Size     = UDim2.new(1, -94, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BorderSizePixel = 0,
+        Visible  = false,
+        ClipsDescendants = true,
+        ZIndex   = 60,
+        Parent   = ChatClip,
+    })
+    Util.AddCorner(PersonaList, Theme.CornerSmall)
+    local _plStroke = Util.AddStroke(PersonaList, Theme.BorderLight, 1, 0.1)
+    Themed(PersonaList, { BackgroundColor3 = function(t) return t.SidebarActive end })
+    Themed(_plStroke, { Color = function(t) return t.BorderLight end })
+    local PersonaListInner = Util.Create("Frame", {
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        ZIndex = 61,
+        Parent = PersonaList,
+    })
+    Util.AddList(PersonaListInner, Enum.FillDirection.Vertical, 2)
+    Util.AddPadding(PersonaListInner, 4, 4, 4, 4)
+
+    local personaListOpen = false
+    local function ClosePersonaList()
+        if not personaListOpen then return end
+        personaListOpen = false
+        Util.TweenFast(PersonaArrow, { Rotation = 0 })
+        task.delay(0.02, function() PersonaList.Visible = false end)
+    end
+    local function OpenPersonaList()
+        if personaListOpen then return end
+        personaListOpen = true
+        PersonaList.Visible = true
+        Util.TweenFast(PersonaArrow, { Rotation = 180 })
+    end
+    local function SetPersonaText(name)
+        currentPersona = name
+        PersonaBtn.Text = name
+    end
+    local function BuildPersonaList(list)
+        for _, c in ipairs(PersonaListInner:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        for _, name in ipairs(list) do
+            local Item = Util.Create("TextButton", {
+                BackgroundColor3 = Theme.SurfaceLight,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 26),
+                Text = name,
+                TextColor3 = Theme.Text,
+                FontFace = Theme.Font,
+                TextSize = 12,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                AutoButtonColor = false,
+                ZIndex = 62,
+                Parent = PersonaListInner,
+            })
+            Util.AddCorner(Item, Theme.CornerSmall)
+            Util.AddPadding(Item, 0, 8, 0, 8)
+            Themed(Item, { TextColor3 = function(t) return t.Text end })
+            Item.MouseEnter:Connect(function() Util.TweenFast(Item, {BackgroundTransparency = 0.4, BackgroundColor3 = Hyperion.Theme.SurfaceHover}) end)
+            Item.MouseLeave:Connect(function() Util.TweenFast(Item, {BackgroundTransparency = 1}) end)
+            Item.MouseButton1Click:Connect(function()
+                SetPersonaText(name)
+                ClosePersonaList()
+                if personaHandler then task.spawn(personaHandler, name) end
+            end)
+        end
+        if currentPersona == "" and list[1] then SetPersonaText(list[1]) end
+    end
+
+    PersonaBtn.MouseButton1Click:Connect(function()
+        if personaListOpen then ClosePersonaList() else OpenPersonaList() end
+    end)
+
     -- ── Message log ─────────────────────────────────────────────────────────
     local ChatLog = Util.Create("ScrollingFrame", {
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, CHAT_HEADER_H),
-        Size     = UDim2.new(1, 0, 1, -(CHAT_HEADER_H + CHAT_INPUT_H)),
+        Position = UDim2.new(0, 0, 0, CHAT_HEADER_H + CHAT_BAR_H),
+        Size     = UDim2.new(1, 0, 1, -(CHAT_HEADER_H + CHAT_BAR_H + CHAT_INPUT_H)),
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme.Accent,
@@ -4589,6 +4737,11 @@ function Hyperion:CreateWindow(config)
         ShowChatHint()
         SetChatStatus("Ready")
     end
+
+    NewChatBtn.MouseButton1Click:Connect(function()
+        ClearChatLog()
+        if newChatHandler then task.spawn(newChatHandler) end
+    end)
 
     -- ── Input bar ─────────────────────────────────────────────────────────
     local ChatInputBar = Util.Create("Frame", {
@@ -4692,6 +4845,7 @@ function Hyperion:CreateWindow(config)
         if not chatPanelOpen then return end
         chatPanelOpen = false
         _G._HyperionChatOpen = false
+        ClosePersonaList()
         Util.Tween(ChatOverlay, 0.22, { Position = CHAT_CLOSED, BackgroundTransparency = 1 }, Enum.EasingStyle.Quint)
         Util.Tween(ChatClip, 0.22, { Position = UDim2.new(0,-20,0,0) }, Enum.EasingStyle.Quint)
         Util.TweenFast(ChatBtn, { BackgroundTransparency = 0.5, ImageColor3 = Hyperion.Theme.TextMuted })
@@ -4733,6 +4887,10 @@ function Hyperion:CreateWindow(config)
     _setChatStatus = SetChatStatus
     _clearChat     = ClearChatLog
     _setChatSend   = function(fn) chatSendHandler = fn end
+    _setChatPersonas = function(list) BuildPersonaList(list) end
+    _onPersonaChange = function(fn) personaHandler = fn end
+    _onNewChat       = function(fn) newChatHandler = fn end
+    _getPersona      = function() return currentPersona end
     end)() -- AI CHAT PANEL scope
 
     local _showKb, _hideKb, _toggleKb
@@ -5115,9 +5273,9 @@ function Hyperion:CreateWindow(config)
     local function LoadFieldIntoPicker()
         local c = working[selectedField]
         hueState.h, hueState.s, hueState.v = Color3.toHSV(c)
-        SVBox.BackgroundColor3 = Color3.fromHSV(hueState.h, 1, 1)
-        SVCursor.Position = UDim2.new(hueState.s, 0, 1 - hueState.v, 0)
-        HueCur.Position = UDim2.new(0.5, 0, hueState.h, 0)
+        Util.TweenFast(SVBox, { BackgroundColor3 = Color3.fromHSV(hueState.h, 1, 1) })
+        Util.TweenFast(SVCursor, { Position = UDim2.new(hueState.s, 0, 1 - hueState.v, 0) })
+        Util.TweenFast(HueCur, { Position = UDim2.new(0.5, 0, hueState.h, 0) })
         HexLabel.Text = ToHex(c)
         ThStatus.Text = "Editing: " .. selectedField
     end
@@ -5125,8 +5283,12 @@ function Hyperion:CreateWindow(config)
     local function SelectField(key)
         selectedField = key
         for k, sw in pairs(swatches) do
-            sw.Stroke.Color = (k == key) and Hyperion.Theme.Accent or Hyperion.Theme.BorderLight
-            sw.Stroke.Thickness = (k == key) and 2 or 1
+            local sel = (k == key)
+            Util.TweenFast(sw.Stroke, {
+                Color = sel and Hyperion.Theme.Accent or Hyperion.Theme.BorderLight,
+                Thickness = sel and 2.5 or 1,
+                Transparency = sel and 0 or 0.1,
+            })
         end
         LoadFieldIntoPicker()
     end
@@ -5143,6 +5305,12 @@ function Hyperion:CreateWindow(config)
         Util.AddCorner(Sw, Theme.CornerSmall)
         local swStroke = Util.AddStroke(Sw, Theme.BorderLight, 1, 0.1)
         swatches[f.key] = { Btn = Sw, Stroke = swStroke }
+        Sw.MouseEnter:Connect(function()
+            if selectedField ~= f.key then Util.TweenFast(swStroke, { Transparency = 0, Color = Hyperion.Theme.TextMuted }) end
+        end)
+        Sw.MouseLeave:Connect(function()
+            if selectedField ~= f.key then Util.TweenFast(swStroke, { Transparency = 0.1, Color = Hyperion.Theme.BorderLight }) end
+        end)
         Sw.MouseButton1Click:Connect(function() SelectField(f.key) end)
     end
 
@@ -5339,6 +5507,9 @@ function Hyperion:CreateWindow(config)
             RefreshThemeList()
             ThStatus.Text = "Saved: " .. nm
             Hyperion:Notify({ Title = "Theme", Content = "Saved: " .. nm, Type = "Success", Duration = 3 })
+            ThSaveBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 90)
+            ThSaveBtn.BackgroundTransparency = 0
+            Util.Tween(ThSaveBtn, 0.45, { BackgroundColor3 = Hyperion.Theme.SurfaceLight, BackgroundTransparency = 0.2 }, Enum.EasingStyle.Quad)
         else
             ThStatus.Text = "Save failed"
         end
@@ -5350,6 +5521,20 @@ function Hyperion:CreateWindow(config)
         ThStatus.Text = "Reset to current theme"
     end)
 
+    local function AnimateThemeOpen()
+        local i = 0
+        for _, f in ipairs(THEME_FIELDS) do
+            local sw = swatches[f.key]
+            if sw then
+                i = i + 1
+                sw.Btn.BackgroundTransparency = 1
+                task.delay(i * 0.035, function()
+                    if sw.Btn and sw.Btn.Parent then Util.Tween(sw.Btn, 0.25, { BackgroundTransparency = 0 }, Enum.EasingStyle.Back) end
+                end)
+            end
+        end
+    end
+
     -- Open / close
     local TH_OPEN   = UDim2.new(0, 0, 0, HeaderHeight)
     local TH_CLOSED = UDim2.new(0, -THEME_W - 14, 0, HeaderHeight)
@@ -5360,6 +5545,7 @@ function Hyperion:CreateWindow(config)
         if _closeChat then _closeChat() end
         SelectField(selectedField)
         RefreshThemeList()
+        AnimateThemeOpen()
         ThemeOverlay.Position = TH_CLOSED
         ThemeOverlay.BackgroundTransparency = 1
         ThemeOverlay.Visible = true
@@ -5766,6 +5952,10 @@ function Hyperion:CreateWindow(config)
     function WindowObj:SetChatStatus(text) if _setChatStatus then _setChatStatus(text) end end
     function WindowObj:ClearChat()         if _clearChat then _clearChat() end end
     function WindowObj:OnChatSend(fn)      if _setChatSend then _setChatSend(fn) end end
+    function WindowObj:SetChatPersonas(list) if _setChatPersonas then _setChatPersonas(list) end end
+    function WindowObj:OnPersonaChange(fn) if _onPersonaChange then _onPersonaChange(fn) end end
+    function WindowObj:OnNewChat(fn)       if _onNewChat then _onNewChat(fn) end end
+    function WindowObj:GetPersona()        if _getPersona then return _getPersona() end end
 
     function WindowObj:OpenThemePanel()  if _openTheme then _openTheme() end end
     function WindowObj:CloseThemePanel() if _closeTheme then _closeTheme() end end
