@@ -4506,7 +4506,7 @@ function Hyperion:CreateWindow(config)
         BackgroundTransparency = 0.2,
         Position = UDim2.new(0, 10, 0.5, 0),
         AnchorPoint = Vector2.new(0, 0.5),
-        Size     = UDim2.new(1, -94, 0, 26),
+        Size     = UDim2.new(1, -104, 0, 26),
         Text     = "Select persona",
         TextColor3 = Theme.Text,
         FontFace = Theme.FontMedium,
@@ -4517,10 +4517,22 @@ function Hyperion:CreateWindow(config)
         Parent   = PersonaBar,
     })
     Util.AddCorner(PersonaBtn, Theme.CornerSmall)
-    Util.AddPadding(PersonaBtn, 0, 9, 0, 9)
+    Util.AddPadding(PersonaBtn, 0, 9, 0, 28)
     local _pbStroke = Util.AddStroke(PersonaBtn, Theme.Border, 1, 0.4)
     Themed(PersonaBtn, { BackgroundColor3 = function(t) return t.SurfaceLight end, TextColor3 = function(t) return t.Text end })
     Themed(_pbStroke, { Color = function(t) return t.Border end })
+    local PersonaIcon = Util.Create("ImageLabel", {
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 8, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(0, 14, 0, 14),
+        Image = Hyperion.Lucide.User,
+        ImageColor3 = Theme.Accent,
+        ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 54,
+        Parent = PersonaBtn,
+    })
+    Themed(PersonaIcon, { ImageColor3 = function(t) return t.Accent end })
     local PersonaArrow = Util.Create("TextLabel", {
         BackgroundTransparency = 1,
         Position = UDim2.new(1, -16, 0.5, 0),
@@ -4540,8 +4552,8 @@ function Hyperion:CreateWindow(config)
         BackgroundTransparency = 0.85,
         Position = UDim2.new(1, -10, 0.5, 0),
         AnchorPoint = Vector2.new(1, 0.5),
-        Size     = UDim2.new(0, 70, 0, 26),
-        Text     = "+ New",
+        Size     = UDim2.new(0, 80, 0, 26),
+        Text     = "New Chat",
         TextColor3 = Theme.Accent,
         FontFace = Theme.FontMedium,
         TextSize = 12,
@@ -4559,7 +4571,7 @@ function Hyperion:CreateWindow(config)
     local PersonaList = Util.Create("Frame", {
         BackgroundColor3 = Theme.SidebarActive,
         Position = UDim2.new(0, 10, 0, CHAT_HEADER_H + CHAT_BAR_H - 4),
-        Size     = UDim2.new(1, -94, 0, 0),
+        Size     = UDim2.new(1, -104, 0, 0),
         AutomaticSize = Enum.AutomaticSize.Y,
         BorderSizePixel = 0,
         Visible  = false,
