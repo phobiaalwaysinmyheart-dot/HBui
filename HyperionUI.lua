@@ -4887,7 +4887,7 @@ function Hyperion:CreateWindow(config)
     -- ================================================================
     -- THEME CREATOR PANEL  (slides in from the left, like Config/Chat)
     -- ================================================================
-    do
+    ;(function()
     local THEME_W        = 280
     local themePanelOpen = false
 
@@ -5388,7 +5388,7 @@ function Hyperion:CreateWindow(config)
 
     _openTheme   = OpenThemePanel
     _toggleTheme = function() if themePanelOpen then CloseThemePanel() else OpenThemePanel() end end
-    end -- THEME CREATOR scope
+    end)() -- THEME CREATOR scope
 
     -- ============================================================
     -- CONTENT AREA
