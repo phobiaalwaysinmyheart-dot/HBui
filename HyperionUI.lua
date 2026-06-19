@@ -11,6 +11,70 @@
     License: MIT
 --]]
 
+local MAINTENANCE = true
+if MAINTENANCE then
+    local cg = (gethui and gethui()) or game:GetService("CoreGui")
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "_HyperionMaintenance"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 2147483647
+    pcall(function() gui.Parent = cg end)
+    if not gui.Parent then gui.Parent = game:GetService("CoreGui") end
+
+    local card = Instance.new("Frame")
+    card.AnchorPoint = Vector2.new(0.5, 0.5)
+    card.Position = UDim2.new(0.5, 0, 0.5, 0)
+    card.Size = UDim2.new(0, 380, 0, 150)
+    card.BackgroundColor3 = Color3.fromRGB(18, 16, 24)
+    card.BorderSizePixel = 0
+    card.Parent = gui
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 14)
+    local stroke = Instance.new("UIStroke", card)
+    stroke.Color = Color3.fromRGB(140, 100, 240)
+    stroke.Thickness = 1.5
+    stroke.Transparency = 0.15
+
+    local bar = Instance.new("Frame")
+    bar.Size = UDim2.new(1, -28, 0, 3)
+    bar.Position = UDim2.new(0, 14, 0, 16)
+    bar.BackgroundColor3 = Color3.fromRGB(155, 115, 255)
+    bar.BorderSizePixel = 0
+    bar.Parent = card
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(1, 0)
+
+    local title = Instance.new("TextLabel")
+    title.BackgroundTransparency = 1
+    title.Position = UDim2.new(0, 0, 0, 40)
+    title.Size = UDim2.new(1, 0, 0, 32)
+    title.Text = "Under Maintenance"
+    title.TextColor3 = Color3.fromRGB(242, 238, 252)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 23
+    title.Parent = card
+
+    local sub = Instance.new("TextLabel")
+    sub.BackgroundTransparency = 1
+    sub.Position = UDim2.new(0, 18, 0, 80)
+    sub.Size = UDim2.new(1, -36, 0, 54)
+    sub.Text = "Hyperion is temporarily down for updates.\nPlease check back soon."
+    sub.TextColor3 = Color3.fromRGB(172, 162, 192)
+    sub.Font = Enum.Font.Gotham
+    sub.TextSize = 13
+    sub.TextWrapped = true
+    sub.Parent = card
+
+    pcall(function()
+        Instance.new("UIGradient", bar).Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(110, 80, 220)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 140, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(110, 80, 220)),
+        })
+    end)
+
+    while true do task.wait(1) end
+end
+
 ----------------------------------------------------------------
 -- ENVIRONMENT COMPATIBILITY
 ----------------------------------------------------------------
