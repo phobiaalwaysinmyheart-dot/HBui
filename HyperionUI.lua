@@ -393,6 +393,105 @@ Hyperion.Themes = {
         SliderBg     = Color3.fromRGB(48, 50, 66),
         InputBg      = Color3.fromRGB(33, 34, 46),
     },
+    Halloween = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(255, 150, 40),
+        ParticleStyle = "halloween",
+        GradientStops = {
+            {0,    Color3.fromRGB(14, 8, 4)},
+            {0.3,  Color3.fromRGB(40, 18, 6)},
+            {0.5,  Color3.fromRGB(70, 32, 8)},
+            {0.7,  Color3.fromRGB(40, 18, 6)},
+            {1,    Color3.fromRGB(14, 8, 4)},
+        },
+        Accent       = Color3.fromRGB(255, 140, 30),
+        AccentDark   = Color3.fromRGB(205, 100, 20),
+        AccentLight  = Color3.fromRGB(255, 175, 80),
+        AccentGlow   = Color3.fromRGB(255, 155, 55),
+        AccentSub    = Color3.fromRGB(150, 70, 200),
+        Background   = Color3.fromRGB(14, 8, 4),
+        Surface      = Color3.fromRGB(24, 15, 8),
+        SurfaceLight = Color3.fromRGB(36, 23, 12),
+        SurfaceHover = Color3.fromRGB(48, 31, 16),
+        SurfaceActive= Color3.fromRGB(58, 38, 20),
+        Sidebar      = Color3.fromRGB(18, 11, 6),
+        SidebarActive= Color3.fromRGB(40, 26, 14),
+        Text         = Color3.fromRGB(248, 236, 222),
+        TextDim      = Color3.fromRGB(190, 150, 110),
+        TextMuted    = Color3.fromRGB(120, 90, 60),
+        Border       = Color3.fromRGB(52, 34, 18),
+        BorderLight  = Color3.fromRGB(72, 48, 26),
+        ToggleOff    = Color3.fromRGB(50, 33, 18),
+        SliderBg     = Color3.fromRGB(36, 23, 12),
+        InputBg      = Color3.fromRGB(16, 10, 5),
+    },
+    Lavender = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(210, 185, 255),
+        ParticleStyle = "petals",
+        GradientStops = {
+            {0,    Color3.fromRGB(16, 13, 24)},
+            {0.3,  Color3.fromRGB(34, 28, 56)},
+            {0.5,  Color3.fromRGB(58, 48, 96)},
+            {0.7,  Color3.fromRGB(34, 28, 56)},
+            {1,    Color3.fromRGB(16, 13, 24)},
+        },
+        Accent       = Color3.fromRGB(187, 160, 255),
+        AccentDark   = Color3.fromRGB(145, 118, 215),
+        AccentLight  = Color3.fromRGB(210, 190, 255),
+        AccentGlow   = Color3.fromRGB(198, 172, 255),
+        AccentSub    = Color3.fromRGB(120, 98, 185),
+        Background   = Color3.fromRGB(16, 13, 24),
+        Surface      = Color3.fromRGB(24, 20, 36),
+        SurfaceLight = Color3.fromRGB(34, 28, 50),
+        SurfaceHover = Color3.fromRGB(44, 37, 64),
+        SurfaceActive= Color3.fromRGB(52, 44, 74),
+        Sidebar      = Color3.fromRGB(19, 15, 28),
+        SidebarActive= Color3.fromRGB(36, 30, 54),
+        Text         = Color3.fromRGB(238, 232, 250),
+        TextDim      = Color3.fromRGB(170, 158, 200),
+        TextMuted    = Color3.fromRGB(100, 90, 130),
+        Border       = Color3.fromRGB(46, 38, 68),
+        BorderLight  = Color3.fromRGB(64, 54, 92),
+        ToggleOff    = Color3.fromRGB(44, 37, 64),
+        SliderBg     = Color3.fromRGB(32, 26, 48),
+        InputBg      = Color3.fromRGB(17, 13, 26),
+    },
+    ["Strawberry Milk"] = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(255, 130, 160),
+        ParticleStyle = "strawberry",
+        GradientStops = {
+            {0,    Color3.fromRGB(26, 16, 20)},
+            {0.3,  Color3.fromRGB(54, 28, 38)},
+            {0.5,  Color3.fromRGB(92, 48, 64)},
+            {0.7,  Color3.fromRGB(54, 28, 38)},
+            {1,    Color3.fromRGB(26, 16, 20)},
+        },
+        Accent       = Color3.fromRGB(255, 150, 175),
+        AccentDark   = Color3.fromRGB(220, 110, 140),
+        AccentLight  = Color3.fromRGB(255, 195, 210),
+        AccentGlow   = Color3.fromRGB(255, 170, 190),
+        AccentSub    = Color3.fromRGB(190, 90, 120),
+        Background   = Color3.fromRGB(26, 16, 20),
+        Surface      = Color3.fromRGB(38, 24, 30),
+        SurfaceLight = Color3.fromRGB(52, 34, 42),
+        SurfaceHover = Color3.fromRGB(64, 42, 52),
+        SurfaceActive= Color3.fromRGB(74, 50, 60),
+        Sidebar      = Color3.fromRGB(30, 19, 24),
+        SidebarActive= Color3.fromRGB(54, 36, 44),
+        Text         = Color3.fromRGB(252, 240, 244),
+        TextDim      = Color3.fromRGB(206, 160, 175),
+        TextMuted    = Color3.fromRGB(130, 92, 104),
+        Border       = Color3.fromRGB(66, 44, 54),
+        BorderLight  = Color3.fromRGB(88, 60, 72),
+        ToggleOff    = Color3.fromRGB(62, 42, 50),
+        SliderBg     = Color3.fromRGB(46, 30, 38),
+        InputBg      = Color3.fromRGB(24, 15, 19),
+    },
     Purple = {
         Logo         = nil,  -- uses the default/base logo: rbxassetid://74070104523360
         Accent       = Color3.fromRGB(140, 80, 220),
@@ -1440,12 +1539,43 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle, s
         })
     end
 
+    -- EMOJI: falling emoji glyphs with sway + rotation (Halloween / Strawberry)
+    local function _spawnEmoji(emojis, szMin, szMax)
+        if not isAlive() then return end
+        local W, H = getCanvasSize()
+        local sz = math.random(szMin, szMax)
+        local lbl = Instance.new("TextLabel")
+        lbl.BackgroundTransparency = 1
+        lbl.Text = emojis[math.random(1, #emojis)]
+        lbl.TextSize = sz
+        lbl.Font = Enum.Font.GothamBold
+        lbl.TextColor3 = Color3.new(1, 1, 1)
+        lbl.Size = UDim2.fromOffset(sz + 8, sz + 8)
+        lbl.AnchorPoint = Vector2.new(0.5, 0.5)
+        lbl.Position = UDim2.fromOffset(math.random(10, W - 10), -sz)
+        lbl.Rotation = math.random(-20, 20)
+        lbl.ZIndex = 4
+        lbl.Parent = mParent
+        table.insert(Hyperion._starFrames, lbl)
+        table.insert(activeParticles, {
+            type = "emoji", frame = lbl, alive = true,
+            x = math.random(10, W - 10), y = -sz,
+            speed = math.random(28, 60), swayAmp = math.random(15, 40),
+            swaySpeed = math.random(6, 16) / 10, rotSpeed = math.random(-40, 40),
+            phase = math.random(0, 628) / 100, time = 0,
+            maxY = H + sz + 20, fadeStart = H * 0.7,
+        })
+    end
+    local function spawnHalloween() _spawnEmoji({"🎃", "💀", "🍬", "👻"}, 16, 28) end
+    local function spawnStrawberry() _spawnEmoji({"🍓"}, 14, 24) end
+
     -- Spawn function map
     local spawnFn = {
         stars = spawnStar, petals = spawnPetal, bubbles = spawnBubble,
         embers = spawnEmber, wisps = spawnWisp, orbs = spawnOrb,
         gridlines = spawnGridline, hearts = spawnHeart, paws = spawnPaw,
         snowflakes = spawnSnowflake,
+        halloween = spawnHalloween, strawberry = spawnStrawberry,
     }
     local spawnFunc = spawnFn[pStyle] or spawnStar
 
@@ -1457,6 +1587,8 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle, s
         hearts = {4, 9},
         paws   = {5, 11},
         snowflakes = {4, 9},
+        halloween = {6, 13},
+        strawberry = {4, 9},
     }
     local iRange = intervalRange[pStyle] or {14, 28}
 
@@ -1617,6 +1749,18 @@ local function _startStarfield(parent, starColor, meteorParent, particleStyle, s
                             child.BackgroundTransparency = newAlpha
                         end
                     end
+                end
+                if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
+
+            elseif p.type == "emoji" then
+                if not p.frame or not p.frame.Parent then p.alive = false; table.remove(activeParticles, i); continue end
+                p.time = p.time + dt
+                p.y = p.y + p.speed * dt
+                local sx = p.x + math.sin(p.time * p.swaySpeed + p.phase) * p.swayAmp
+                p.frame.Position = UDim2.fromOffset(sx, p.y)
+                p.frame.Rotation = p.frame.Rotation + p.rotSpeed * dt
+                if p.y > p.fadeStart then
+                    p.frame.TextTransparency = math.clamp((p.y - p.fadeStart) / (p.maxY - p.fadeStart), 0, 1)
                 end
                 if p.y > p.maxY then p.alive = false; if p.frame.Parent then p.frame:Destroy() end end
             end
