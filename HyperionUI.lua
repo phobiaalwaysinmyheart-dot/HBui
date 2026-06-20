@@ -142,6 +142,7 @@ Hyperion.Connections  = {}
 Hyperion.ThemeListeners = {}  -- functions called whenever SetTheme fires
 Hyperion.Keybinds       = {}  -- registry of every AddKeybind entry (for the keybind HUD)
 Hyperion.KeybindListeners = {} -- functions called whenever a keybind is added or changed
+Hyperion._SearchIndex   = {}  -- registry of every UI element (for feature search)
 Hyperion.Version      = "3.0.0"
 Hyperion.Unloaded     = false
 
@@ -3248,7 +3249,7 @@ function Hyperion:CreateWindow(config)
         FolderOpenBtn.Visible = false
     end
 
-    -- ── Search popup ──────────────────────────────────────────────────────
+    -- ── Feature search popup ───────────────────────────────────────────────
     local searchOpen = false
     local SearchOverlay = Util.Create("Frame", {
         Name             = "SearchOverlay",
@@ -3269,12 +3270,12 @@ function Hyperion:CreateWindow(config)
         Size             = UDim2.new(1, -12, 1, 0),
         Position         = UDim2.new(0, 8, 0, 0),
         Text             = "",
-        PlaceholderText  = "Search tabs...",
+        PlaceholderText  = "Search features...",
         TextColor3       = Theme.Text,
         PlaceholderColor3 = Theme.TextMuted,
         FontFace         = Theme.Font,
         TextSize         = 12,
-        ClearTextOnFocus = true,
+        ClearTextOnFocus = false,
         ZIndex           = 9,
         Parent           = SearchOverlay,
     })
@@ -3283,33 +3284,106 @@ function Hyperion:CreateWindow(config)
         PlaceholderColor3 = function(t) return t.TextMuted end,
     })
 
-    local function FilterTabs(query)
-        query = string.lower(query)
-        for _, child in ipairs(TabContainer:GetChildren()) do
-            if child:IsA("TextButton") and child.Name:find("^Tab_") then
-                if query == "" then
-                    child.Visible = true
-                else
-                    local tabName = string.lower(string.gsub(child.Name, "^Tab_", ""))
-                    child.Visible = string.find(tabName, query, 1, true) ~= nil
-                end
-            elseif child:IsA("Frame") and child.Name:find("^Cat_") then
-                if query == "" then
-                    child.Visible = true
-                else
-                    child.Visible = false
-                end
+    local SearchResults = Util.Create("ScrollingFrame", {
+        Name = "SearchResults",
+        BackgroundColor3 = Theme.Sidebar,
+        AnchorPoint = Vector2.new(0, 1),
+        Size = UDim2.new(0, SidebarWidth - 16, 0, 0),
+        Position = UDim2.new(0, 8, 1, -76),
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Theme.Accent,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Visible = false,
+        ZIndex = 9,
+        Parent = Sidebar,
+    })
+    Util.AddCorner(SearchResults, Theme.CornerSmall)
+    Util.AddStroke(SearchResults, Theme.BorderLight, 1, 0.2)
+    Util.AddList(SearchResults, Enum.FillDirection.Vertical, 2)
+    Util.AddPadding(SearchResults, 4, 4, 4, 4)
+    Themed(SearchResults, {
+        BackgroundColor3 = function(t) return t.SurfaceLight end,
+        ScrollBarImageColor3 = function(t) return t.Accent end,
+    })
+
+    local function closeSearch()
+        searchOpen = false
+        SearchOverlay.Visible = false
+        SearchResults.Visible = false
+        SearchBox.Text = ""
+        Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
+    end
+
+    local function goToFeature(entry)
+        closeSearch()
+        if entry.tab and entry.tab.Activate then pcall(entry.tab.Activate) end
+        if entry.tab and entry.tab.ActivateGroup and entry.groupData then pcall(entry.tab.ActivateGroup, entry.groupData) end
+        task.defer(function()
+            local frame, page = entry.frame, entry.page
+            if frame and frame.Parent and page then
+                local relY = frame.AbsolutePosition.Y - page.AbsolutePosition.Y + page.CanvasPosition.Y
+                page.CanvasPosition = Vector2.new(0, math.max(0, relY - 24))
+                local hl = Util.Create("UIStroke", { Color = Hyperion.Theme.Accent, Thickness = 0, Transparency = 0, Parent = frame })
+                Util.TweenFast(hl, { Thickness = 2 })
+                task.delay(0.9, function()
+                    Util.Tween(hl, 0.4, { Transparency = 1 }, Enum.EasingStyle.Quad)
+                    task.delay(0.45, function() pcall(function() hl:Destroy() end) end)
+                end)
+            end
+        end)
+    end
+
+    local function RefreshResults(q)
+        for _, c in ipairs(SearchResults:GetChildren()) do
+            if c:IsA("TextButton") then c:Destroy() end
+        end
+        q = (q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if q == "" then SearchResults.Visible = false return end
+        local lq = string.lower(q)
+        local count = 0
+        for _, e in ipairs(Hyperion._SearchIndex) do
+            if e.lname:find(lq, 1, true) or e.ltab:find(lq, 1, true)
+                or (e.group and string.lower(e.group):find(lq, 1, true)) then
+                count = count + 1
+                local ee = e
+                local Row = Util.Create("TextButton", {
+                    BackgroundColor3 = Theme.Surface, BackgroundTransparency = 0.3,
+                    Size = UDim2.new(1, 0, 0, 32), Text = "", AutoButtonColor = false,
+                    ZIndex = 10, Parent = SearchResults,
+                })
+                Util.AddCorner(Row, Theme.CornerSmall)
+                local NameL = Util.Create("TextLabel", {
+                    BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 3),
+                    Size = UDim2.new(1, -12, 0, 15), Text = e.name,
+                    TextColor3 = Theme.Text, FontFace = Theme.FontMedium, TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+                    ZIndex = 11, Parent = Row,
+                })
+                Themed(NameL, { TextColor3 = function(t) return t.Text end })
+                local PathL = Util.Create("TextLabel", {
+                    BackgroundTransparency = 1, Position = UDim2.new(0, 8, 0, 17),
+                    Size = UDim2.new(1, -12, 0, 12), Text = e.tabName .. "  ›  " .. e.group,
+                    TextColor3 = Theme.TextMuted, FontFace = Theme.Font, TextSize = 10,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+                    ZIndex = 11, Parent = Row,
+                })
+                Themed(PathL, { TextColor3 = function(t) return t.TextMuted end })
+                Row.MouseEnter:Connect(function() Util.TweenFast(Row, { BackgroundTransparency = 0, BackgroundColor3 = Hyperion.Theme.SurfaceHover }) end)
+                Row.MouseLeave:Connect(function() Util.TweenFast(Row, { BackgroundTransparency = 0.3, BackgroundColor3 = Hyperion.Theme.Surface }) end)
+                Row.MouseButton1Click:Connect(function() goToFeature(ee) end)
+                if count >= 40 then break end
             end
         end
+        if count == 0 then SearchResults.Visible = false return end
+        SearchResults.Size = UDim2.new(0, SidebarWidth - 16, 0, math.min(count * 34 + 8, 240))
+        SearchResults.Visible = true
     end
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-        FilterTabs(SearchBox.Text)
-    end)
-    SearchBox.FocusLost:Connect(function()
-        if SearchBox.Text == "" then
-            FilterTabs("")
-        end
+        RefreshResults(SearchBox.Text)
     end)
 
     SearchBtn.MouseButton1Click:Connect(function()
@@ -3319,32 +3393,24 @@ function Hyperion:CreateWindow(config)
             SearchBox:CaptureFocus()
             Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.Accent, BackgroundTransparency = 0})
         else
-            SearchOverlay.Visible = false
-            SearchBox.Text = ""
-            FilterTabs("")
-            Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
+            closeSearch()
         end
     end)
 
-    -- Click anywhere outside search to close it
     Util.Connect(UserInputService.InputBegan, function(input, processed)
         if not searchOpen then return end
         if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
         local pos = input.Position
-        local sPos = SearchOverlay.AbsolutePosition
-        local sSize = SearchOverlay.AbsoluteSize
-        local insideSearch = pos.X >= sPos.X and pos.X <= sPos.X + sSize.X
-            and pos.Y >= sPos.Y and pos.Y <= sPos.Y + sSize.Y
-        local btnPos = SearchBtn.AbsolutePosition
-        local btnSize = SearchBtn.AbsoluteSize
+        local function inside(o)
+            if not o.Visible then return false end
+            local p, s = o.AbsolutePosition, o.AbsoluteSize
+            return pos.X >= p.X and pos.X <= p.X + s.X and pos.Y >= p.Y and pos.Y <= p.Y + s.Y
+        end
+        local btnPos, btnSize = SearchBtn.AbsolutePosition, SearchBtn.AbsoluteSize
         local insideBtn = pos.X >= btnPos.X and pos.X <= btnPos.X + btnSize.X
             and pos.Y >= btnPos.Y and pos.Y <= btnPos.Y + btnSize.Y
-        if not insideSearch and not insideBtn then
-            searchOpen = false
-            SearchOverlay.Visible = false
-            SearchBox.Text = ""
-            FilterTabs("")
-            Util.TweenFast(SearchBtn, {ImageColor3 = Hyperion.Theme.TextDim, BackgroundTransparency = 0.35})
+        if not inside(SearchOverlay) and not inside(SearchResults) and not insideBtn then
+            closeSearch()
         end
     end)
 
@@ -6789,6 +6855,7 @@ function Hyperion:CreateWindow(config)
             end
             WindowObj.ActiveTab = TabObj
         end
+        TabObj.Activate = ActivateTab
 
         -- Hover
         TabButton.MouseEnter:Connect(function()
@@ -6829,6 +6896,16 @@ function Hyperion:CreateWindow(config)
             local groupName = secCfg.Group or "__default"
             local groupData = EnsureGroup(groupName)
             local parentCol = (side == "right") and groupData.Right or groupData.Left
+            local _grpDisplay = (groupName ~= "__default") and groupName or secName
+            local function _regSearch(elName, elFrame, kind)
+                if not elName or elName == "" then return end
+                table.insert(Hyperion._SearchIndex, {
+                    name = elName, lname = string.lower(elName),
+                    section = secName, group = _grpDisplay, kind = kind or "",
+                    tabName = (TabObj.Name or ""), ltab = string.lower(TabObj.Name or ""),
+                    frame = elFrame, tab = TabObj, groupData = groupData, page = TabPage,
+                })
+            end
 
             if not TabObj.ActiveGroup then
                 if groupName == "__default" then
@@ -6954,6 +7031,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Toggle")
                 Util.AddCorner(Frame, Theme.CornerSmall)
 
                 local ToggleLabel = Util.Create("TextLabel", {
@@ -7077,6 +7155,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Slider")
 
                 -- Label + Value row
                 local Row = Util.Create("Frame", {
@@ -7261,6 +7340,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Btn, "Button")
                 Util.AddCorner(Btn, Theme.CornerSmall)
                 local _btnStroke = Util.AddStroke(Btn, Theme.Border, 1, 0.45)
                 Themed(Btn, { BackgroundColor3 = function(t) return t.SurfaceLight end })
@@ -7361,6 +7441,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Dropdown")
 
                 local DropLabel = Util.Create("TextLabel", {
                     Name = "Label",
@@ -7618,6 +7699,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Textbox")
 
                 local TbLabel = Util.Create("TextLabel", {
                     Name = "Label",
@@ -7695,6 +7777,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Keybind")
 
                 local KbLabel = Util.Create("TextLabel", {
                     Name = "Label",
@@ -7812,6 +7895,7 @@ function Hyperion:CreateWindow(config)
                     ZIndex = 2,
                     Parent = Elements
                 })
+                _regSearch(name, Frame, "Color")
 
                 Util.Create("TextLabel", {
                     Name = "Label",
