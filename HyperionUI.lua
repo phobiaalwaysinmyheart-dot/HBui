@@ -3239,6 +3239,7 @@ function Hyperion:CreateWindow(config)
 
     local SearchBtn = MakeBottomBtn("rbxassetid://10734943674", "Search")   -- lucide-search
     local FolderOpenBtn = MakeBottomBtn("rbxassetid://10723387563", "Config") -- lucide-folder
+    local PlayersBtn = MakeBottomBtn("rbxassetid://10747373426", "Players")  -- lucide-users
     local ChatBtn   = MakeBottomBtn("rbxassetid://10734982144", "Chat")      -- lucide-terminal
     local ThemeBtn  = MakeBottomBtn("rbxassetid://10734910430", "Theme")     -- lucide-palette
     local KeybindBtn = MakeBottomBtn("rbxassetid://10723395215", "Keybinds") -- lucide-gamepad
@@ -4272,8 +4273,10 @@ function Hyperion:CreateWindow(config)
 
     local _closeChat = nil
     local _closeTheme = nil
+    local _closePlayers = nil
     local _openChat, _toggleChat, _addChatMsg, _setChatStatus, _clearChat, _setChatSend
     local _setChatPersonas, _onPersonaChange, _onNewChat, _getPersona
+    local _openPlayers, _togglePlayers, _onPlayersRefresh, _playersScroll
 
     local function OpenConfigPanel()
         if cfgPanelOpen then return end
@@ -4281,6 +4284,7 @@ function Hyperion:CreateWindow(config)
         _G._HyperionCfgOpen = true
         if _closeChat then _closeChat() end
         if _closeTheme then _closeTheme() end
+        if _closePlayers then _closePlayers() end
         HideDeleteConfirm()
         RefreshConfigList()
 
@@ -4961,6 +4965,7 @@ function Hyperion:CreateWindow(config)
         _G._HyperionChatOpen = true
         if cfgPanelOpen then CloseConfigPanel() end
         if _closeTheme then _closeTheme() end
+        if _closePlayers then _closePlayers() end
         ChatOverlay.Position = CHAT_CLOSED
         ChatOverlay.BackgroundTransparency = 1
         ChatOverlay.Visible = true
@@ -5439,7 +5444,21 @@ function Hyperion:CreateWindow(config)
 
     -- forward declares
     local SVBox, SVCursor, HueBar, HueCur, HexLabel
-    local function ApplyLive() Hyperion:SetTheme(BuildTheme(working)) end
+    local _applyLast, _applyQueued = 0, false
+    local function ApplyLive()
+        local now = os.clock()
+        if now - _applyLast >= 0.05 then
+            _applyLast = now
+            Hyperion:SetTheme(BuildTheme(working))
+        elseif not _applyQueued then
+            _applyQueued = true
+            task.delay(0.05, function()
+                _applyQueued = false
+                _applyLast = os.clock()
+                Hyperion:SetTheme(BuildTheme(working))
+            end)
+        end
+    end
     local function ToHex(c) return string.format("#%02X%02X%02X", math.floor(c.R*255+0.5), math.floor(c.G*255+0.5), math.floor(c.B*255+0.5)) end
 
     local function LoadFieldIntoPicker()
@@ -5811,6 +5830,7 @@ function Hyperion:CreateWindow(config)
         themePanelOpen = true
         if cfgPanelOpen then CloseConfigPanel() end
         if _closeChat then _closeChat() end
+        if _closePlayers then _closePlayers() end
         SelectField(selectedField)
         RefreshThemeList()
         AnimateThemeOpen()
@@ -5853,6 +5873,135 @@ function Hyperion:CreateWindow(config)
     _openTheme   = OpenThemePanel
     _toggleTheme = function() if themePanelOpen then CloseThemePanel() else OpenThemePanel() end end
     end)() -- THEME CREATOR scope
+
+    -- ================================================================
+    -- PLAYERS PANEL  (slides in from the left, like Config/Theme)
+    -- ================================================================
+    ;(function()
+    local PLAYERS_W = 300
+    local playersPanelOpen = false
+    local refreshHandler = nil
+
+    local PlayersOverlay = Util.Create("Frame", {
+        Name = "PlayersOverlay",
+        BackgroundColor3 = Theme.Sidebar,
+        Size = UDim2.new(0, PLAYERS_W, 1, -HeaderHeight),
+        Position = UDim2.new(0, -PLAYERS_W - 14, 0, HeaderHeight),
+        ClipsDescendants = true, BorderSizePixel = 0, Visible = false, ZIndex = 50, Parent = MainFrame,
+    })
+    Util.AddCorner(PlayersOverlay, Theme.CornerRadius)
+    local _plStroke = Util.AddStroke(PlayersOverlay, Theme.BorderLight, 1, 0.12)
+    Themed(PlayersOverlay, { BackgroundColor3 = function(t) return t.Sidebar end })
+    Themed(_plStroke, { Color = function(t) return t.BorderLight end })
+
+    local PlHeader = Util.Create("Frame", {
+        BackgroundColor3 = Theme.SidebarActive, Size = UDim2.new(1, 0, 0, 42),
+        BorderSizePixel = 0, ZIndex = 52, Parent = PlayersOverlay,
+    })
+    Themed(PlHeader, { BackgroundColor3 = function(t) return t.SidebarActive end })
+    do
+        local al = Util.Create("Frame", { BackgroundColor3 = Color3.new(1,1,1), Size = UDim2.new(1,0,0,1), BorderSizePixel = 0, ZIndex = 53, Parent = PlHeader })
+        local g = Util.Create("UIGradient", {
+            Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Theme.AccentDark), ColorSequenceKeypoint.new(0.5, Theme.Accent), ColorSequenceKeypoint.new(1, Theme.AccentDark) }),
+            Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0,0.5), NumberSequenceKeypoint.new(0.5,0), NumberSequenceKeypoint.new(1,0.5) }),
+            Parent = al,
+        })
+        Themed(g, { Color = function(t) return ColorSequence.new({ ColorSequenceKeypoint.new(0,t.AccentDark), ColorSequenceKeypoint.new(0.5,t.Accent), ColorSequenceKeypoint.new(1,t.AccentDark) }) end })
+    end
+    local PlTitle = Util.Create("TextLabel", {
+        BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 7), Size = UDim2.new(1, -84, 0, 16),
+        Text = "Players", TextColor3 = Theme.Text, FontFace = Theme.FontBold, TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 53, Parent = PlHeader,
+    })
+    Themed(PlTitle, { TextColor3 = function(t) return t.Text end })
+    local PlCount = Util.Create("TextLabel", {
+        BackgroundTransparency = 1, Position = UDim2.new(0, 14, 0, 25), Size = UDim2.new(1, -84, 0, 12),
+        Text = "0 players", TextColor3 = Theme.TextMuted, FontFace = Theme.Font, TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 53, Parent = PlHeader,
+    })
+    Themed(PlCount, { TextColor3 = function(t) return t.TextMuted end })
+
+    local PlRefreshBtn = Util.Create("ImageButton", {
+        BackgroundColor3 = Theme.SurfaceActive, BackgroundTransparency = 0.4, Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -60, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Image = Hyperion.Lucide.RefreshCw,
+        ImageColor3 = Theme.TextDim, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 54, Parent = PlHeader,
+    })
+    Util.AddCorner(PlRefreshBtn, Theme.CornerSmall)
+    Themed(PlRefreshBtn, { BackgroundColor3 = function(t) return t.SurfaceActive end, ImageColor3 = function(t) return t.TextDim end })
+    PlRefreshBtn.MouseEnter:Connect(function() Util.TweenFast(PlRefreshBtn, {BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Accent}) end)
+    PlRefreshBtn.MouseLeave:Connect(function() Util.TweenFast(PlRefreshBtn, {BackgroundTransparency = 0.4, ImageColor3 = Hyperion.Theme.TextDim}) end)
+
+    local PlCloseBtn = Util.Create("ImageButton", {
+        BackgroundColor3 = Theme.SurfaceActive, BackgroundTransparency = 0.4, Size = UDim2.new(0, 22, 0, 22),
+        Position = UDim2.new(1, -32, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Image = "rbxassetid://10747384394",
+        ImageColor3 = Theme.TextDim, ScaleType = Enum.ScaleType.Fit, AutoButtonColor = false, ZIndex = 54, Parent = PlHeader,
+    })
+    Util.AddCorner(PlCloseBtn, Theme.CornerSmall)
+    Themed(PlCloseBtn, { BackgroundColor3 = function(t) return t.SurfaceActive end, ImageColor3 = function(t) return t.TextDim end })
+    PlCloseBtn.MouseEnter:Connect(function() Util.TweenFast(PlCloseBtn, {BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Error}) end)
+    PlCloseBtn.MouseLeave:Connect(function() Util.TweenFast(PlCloseBtn, {BackgroundTransparency = 0.4, ImageColor3 = Hyperion.Theme.TextDim}) end)
+
+    local PlScroll = Util.Create("ScrollingFrame", {
+        BackgroundTransparency = 1, Position = UDim2.new(0, 0, 0, 42), Size = UDim2.new(1, 0, 1, -42),
+        BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Accent, ScrollBarImageTransparency = 0.4,
+        ScrollingDirection = Enum.ScrollingDirection.Y, AutomaticCanvasSize = Enum.AutomaticSize.Y, CanvasSize = UDim2.new(0,0,0,0),
+        ZIndex = 51, Parent = PlayersOverlay,
+    })
+    Util.AddList(PlScroll, Enum.FillDirection.Vertical, 5)
+    Util.AddPadding(PlScroll, 8, 8, 8, 8)
+    Themed(PlScroll, { ScrollBarImageColor3 = function(t) return t.Accent end })
+
+    local function doRefresh() if refreshHandler then task.spawn(refreshHandler, PlScroll, PlCount) end end
+
+    local PL_OPEN   = UDim2.new(0, 0, 0, HeaderHeight)
+    local PL_CLOSED = UDim2.new(0, -PLAYERS_W - 14, 0, HeaderHeight)
+    local function OpenPlayersPanel()
+        if playersPanelOpen then return end
+        playersPanelOpen = true
+        if cfgPanelOpen then CloseConfigPanel() end
+        if _closeChat then _closeChat() end
+        if _closeTheme then _closeTheme() end
+        doRefresh()
+        PlayersOverlay.Position = PL_CLOSED
+        PlayersOverlay.BackgroundTransparency = 1
+        PlayersOverlay.Visible = true
+        Util.Tween(PlayersOverlay, 0.30, { Position = PL_OPEN, BackgroundTransparency = 0 }, Enum.EasingStyle.Quint)
+        Util.TweenFast(PlayersBtn, { BackgroundTransparency = 0, ImageColor3 = Hyperion.Theme.Accent })
+    end
+    local function ClosePlayersPanel()
+        if not playersPanelOpen then return end
+        playersPanelOpen = false
+        Util.Tween(PlayersOverlay, 0.22, { Position = PL_CLOSED, BackgroundTransparency = 1 }, Enum.EasingStyle.Quint)
+        Util.TweenFast(PlayersBtn, { BackgroundTransparency = 0.5, ImageColor3 = Hyperion.Theme.TextMuted })
+        task.delay(0.25, function()
+            if not playersPanelOpen and PlayersOverlay and PlayersOverlay.Parent then PlayersOverlay.Visible = false end
+        end)
+    end
+    _closePlayers = ClosePlayersPanel
+
+    PlayersBtn.MouseButton1Click:Connect(function()
+        if playersPanelOpen then ClosePlayersPanel() else OpenPlayersPanel() end
+    end)
+    PlCloseBtn.MouseButton1Click:Connect(ClosePlayersPanel)
+    PlRefreshBtn.MouseButton1Click:Connect(doRefresh)
+
+    Util.Connect(UserInputService.InputBegan, function(input, processed)
+        if not playersPanelOpen then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1 and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        local pos = input.Position
+        local oPos, oSize = PlayersOverlay.AbsolutePosition, PlayersOverlay.AbsoluteSize
+        local insidePanel = pos.X >= oPos.X and pos.X <= oPos.X + oSize.X and pos.Y >= oPos.Y and pos.Y <= oPos.Y + oSize.Y
+        local bPos, bSize = PlayersBtn.AbsolutePosition, PlayersBtn.AbsoluteSize
+        local insideBtn = pos.X >= bPos.X and pos.X <= bPos.X + bSize.X and pos.Y >= bPos.Y and pos.Y <= bPos.Y + bSize.Y
+        if not insidePanel and not insideBtn then ClosePlayersPanel() end
+    end)
+    Themed(PlayersBtn, { ImageColor3 = function(t) return playersPanelOpen and t.Accent or t.TextMuted end })
+
+    _openPlayers      = OpenPlayersPanel
+    _togglePlayers    = function() if playersPanelOpen then ClosePlayersPanel() else OpenPlayersPanel() end end
+    _onPlayersRefresh = function(fn) refreshHandler = fn end
+    _playersScroll    = PlScroll
+    end)() -- PLAYERS PANEL scope
 
     -- ============================================================
     -- CONTENT AREA
@@ -6228,6 +6377,11 @@ function Hyperion:CreateWindow(config)
     function WindowObj:OpenThemePanel()  if _openTheme then _openTheme() end end
     function WindowObj:CloseThemePanel() if _closeTheme then _closeTheme() end end
     function WindowObj:ToggleThemePanel() if _toggleTheme then _toggleTheme() end end
+    function WindowObj:OpenPlayersPanel()  if _openPlayers then _openPlayers() end end
+    function WindowObj:ClosePlayersPanel() if _closePlayers then _closePlayers() end end
+    function WindowObj:TogglePlayersPanel() if _togglePlayers then _togglePlayers() end end
+    function WindowObj:OnPlayersRefresh(fn) if _onPlayersRefresh then _onPlayersRefresh(fn) end end
+    function WindowObj:GetPlayersContainer() return _playersScroll end
     function WindowObj:ShowKeybindList()   if _showKb then _showKb() end end
     function WindowObj:HideKeybindList()   if _hideKb then _hideKb() end end
     function WindowObj:ToggleKeybindList() if _toggleKb then _toggleKb() end end
