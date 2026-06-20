@@ -143,6 +143,7 @@ Hyperion.ThemeListeners = {}  -- functions called whenever SetTheme fires
 Hyperion.Keybinds       = {}  -- registry of every AddKeybind entry (for the keybind HUD)
 Hyperion.KeybindListeners = {} -- functions called whenever a keybind is added or changed
 Hyperion._SearchIndex   = {}  -- registry of every UI element (for feature search)
+Hyperion.FlagAPIs       = {}  -- registry of element APIs by flag (for AI actions / scripting)
 Hyperion.Version      = "3.0.0"
 Hyperion.Unloaded     = false
 
@@ -7414,6 +7415,8 @@ function Hyperion:CreateWindow(config)
                 local API = {}
                 function API:Set(v) value = v; if flag then Hyperion.Flags[flag] = v end; UpdateVisual(v); task.spawn(callback, v) end
                 function API:Get() return value end
+                API.Kind = "toggle"
+                if flag then Hyperion.FlagAPIs[flag] = API end
                 return API
             end
 
@@ -7605,6 +7608,8 @@ function Hyperion:CreateWindow(config)
                 local API = {}
                 function API:Set(v) value = math.clamp(v, min, max); if flag then Hyperion.Flags[flag] = value end; ValLabel.Text = string.format("%.10g", value) .. suffix; local r = (value - min) / math.max(max - min, 0.001); Fill.Size = UDim2.new(r, 0, 1, 0); KnobObj.Position = UDim2.new(r, 0, 0.5, 0); task.spawn(callback, value) end
                 function API:Get() return value end
+                API.Kind = "slider"; API.Min = min; API.Max = max
+                if flag then Hyperion.FlagAPIs[flag] = API end
                 return API
             end
 
@@ -7953,6 +7958,8 @@ function Hyperion:CreateWindow(config)
                 function API:Set(v) selected = v; if flag then Hyperion.Flags[flag] = v end; DropText.Text = GetDisplay(); RefreshOptions(); task.spawn(callback, v) end
                 function API:Get() return selected end
                 function API:Refresh(newVals) values = newVals; RefreshOptions() end
+                API.Kind = "dropdown"; API.Values = values
+                if flag then Hyperion.FlagAPIs[flag] = API end
                 return API
             end
 
