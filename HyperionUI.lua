@@ -8192,9 +8192,6 @@ function Hyperion:CreateWindow(config)
                 return API
             end
 
-            -- ==============================================
-            -- CANVAS (raw container for custom drawing)
-            -- ==============================================
             function SectionObj:AddCanvas(cfg)
                 cfg = cfg or {}
                 local Canvas = Util.Create("Frame", {
