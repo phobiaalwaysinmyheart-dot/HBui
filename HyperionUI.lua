@@ -8193,6 +8193,31 @@ function Hyperion:CreateWindow(config)
             end
 
             -- ==============================================
+            -- CANVAS (raw container for custom drawing)
+            -- ==============================================
+            function SectionObj:AddCanvas(cfg)
+                cfg = cfg or {}
+                local Canvas = Util.Create("Frame", {
+                    Name = "Canvas",
+                    BackgroundColor3 = cfg.Background or Theme.Background,
+                    BackgroundTransparency = cfg.Transparency or 0,
+                    Size = UDim2.new(1, 0, 0, cfg.Height or 160),
+                    ClipsDescendants = cfg.Clip ~= false,
+                    ZIndex = 2,
+                    Parent = Elements
+                })
+                Util.AddCorner(Canvas, Theme.CornerSmall)
+                if cfg.Background == nil then
+                    Themed(Canvas, { BackgroundColor3 = function(t) return t.Background end })
+                end
+                if cfg.Stroke ~= false then
+                    local st = Util.AddStroke(Canvas, Theme.BorderLight, 1, 0.3)
+                    Themed(st, { Color = function(t) return t.BorderLight end })
+                end
+                return Canvas
+            end
+
+            -- ==============================================
             -- DIVIDER
             -- ==============================================
             function SectionObj:AddDivider(cfg)
