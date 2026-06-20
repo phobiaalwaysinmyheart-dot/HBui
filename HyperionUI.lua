@@ -201,6 +201,7 @@ Hyperion.Theme = {
     FontBold        = Font.new("rbxasset://fonts/families/GothamSSm.json", Enum.FontWeight.Bold,     Enum.FontStyle.Normal),
 }
 Hyperion._currentThemeName = "Purple"
+Hyperion.AnimatedEffects = true
 
 Hyperion.Lucide = {
     Save       = "rbxassetid://10734941499",  -- lucide-save
@@ -1803,6 +1804,7 @@ function Hyperion:SetTheme(nameOrTable)
     Hyperion.Theme.StarColors    = preset and preset.StarColors     or nil
     _originalSetTheme(self, nameOrTable)
     Hyperion._currentThemeName = type(nameOrTable) == "string" and nameOrTable or nil
+    Hyperion._currentPreset = preset
     -- Update title text (e.g. cat ears for Neko)
     if Hyperion._titleLabel then
         local _tt = preset and preset.TitleText
@@ -1877,16 +1879,30 @@ function Hyperion:SetTheme(nameOrTable)
         end
     end
     -- Start/stop gradient rotation
+    local fxOn = Hyperion.AnimatedEffects ~= false
     if Hyperion._startGradRot then
-        if preset and preset.Animated then
+        if preset and preset.Animated and fxOn then
             Hyperion._startGradRot()
         else
             Hyperion._stopGradRot()
         end
     end
-    if preset and preset.Animated and Hyperion._starParent then
+    if preset and preset.Animated and fxOn and Hyperion._starParent then
         _startStarfield(Hyperion._starParent, preset.StarColor, Hyperion._meteorParent, preset.ParticleStyle, preset.StarColors)
     else
+        _stopStarfield()
+    end
+end
+
+function Hyperion:SetAnimatedEffects(v)
+    Hyperion.AnimatedEffects = v and true or false
+    local cp = Hyperion._currentPreset
+    if not cp then return end
+    if v and cp.Animated then
+        if Hyperion._startGradRot then Hyperion._startGradRot() end
+        if Hyperion._starParent then _startStarfield(Hyperion._starParent, cp.StarColor, Hyperion._meteorParent, cp.ParticleStyle, cp.StarColors) end
+    else
+        if Hyperion._stopGradRot then Hyperion._stopGradRot() end
         _stopStarfield()
     end
 end
