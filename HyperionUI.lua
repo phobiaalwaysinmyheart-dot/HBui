@@ -260,6 +260,39 @@ Hyperion.Lucide = {
 -- THEME PRESETS
 ----------------------------------------------------------------
 Hyperion.Themes = {
+    Hyperion = {
+        Logo         = nil,
+        Animated     = true,
+        StarColor    = Color3.fromRGB(185, 140, 255),
+        ParticleStyle = "stars",
+        GradientStops = {
+            {0,    Color3.fromRGB(10, 7, 20)},
+            {0.3,  Color3.fromRGB(28, 14, 56)},
+            {0.5,  Color3.fromRGB(48, 24, 96)},
+            {0.7,  Color3.fromRGB(28, 14, 56)},
+            {1,    Color3.fromRGB(10, 7, 20)},
+        },
+        Accent       = Color3.fromRGB(150, 90, 235),
+        AccentDark   = Color3.fromRGB(105, 55, 185),
+        AccentLight  = Color3.fromRGB(178, 120, 255),
+        AccentGlow   = Color3.fromRGB(165, 100, 245),
+        AccentSub    = Color3.fromRGB(95, 50, 170),
+        Background   = Color3.fromRGB(10, 7, 20),
+        Surface      = Color3.fromRGB(18, 14, 30),
+        SurfaceLight = Color3.fromRGB(28, 22, 44),
+        SurfaceHover = Color3.fromRGB(38, 30, 58),
+        SurfaceActive= Color3.fromRGB(46, 36, 70),
+        Sidebar      = Color3.fromRGB(13, 10, 24),
+        SidebarActive= Color3.fromRGB(30, 24, 50),
+        Text         = Color3.fromRGB(232, 226, 248),
+        TextDim      = Color3.fromRGB(150, 138, 178),
+        TextMuted    = Color3.fromRGB(85, 75, 112),
+        Border       = Color3.fromRGB(42, 34, 64),
+        BorderLight  = Color3.fromRGB(58, 48, 86),
+        ToggleOff    = Color3.fromRGB(42, 35, 62),
+        SliderBg     = Color3.fromRGB(30, 24, 46),
+        InputBg      = Color3.fromRGB(15, 11, 26),
+    },
     Purple = {
         Logo         = nil,  -- uses the default/base logo: rbxassetid://74070104523360
         Accent       = Color3.fromRGB(140, 80, 220),
