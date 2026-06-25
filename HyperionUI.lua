@@ -11,7 +11,7 @@
     License: MIT
 --]]
 
-local MAINTENANCE = true
+local MAINTENANCE = false
 if MAINTENANCE and not (getgenv and getgenv()._HyperionDev) then
     local cg = (gethui and gethui()) or game:GetService("CoreGui")
     local gui = Instance.new("ScreenGui")
